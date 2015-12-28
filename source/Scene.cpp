@@ -111,22 +111,22 @@ void drawPolygon(ObjectColor color, Face &face){
 void drawObjects(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     int shape_number = 0;
-    drawAxes();
+    //    drawAxes();
     glMatrixMode(GL_MODELVIEW);
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
         if (picking_mode) {
-            glPushName(shape_number);
+            glLoadName(shape_number);
             cout << "name loaded: " << shape_number << endl;
         }
         glLoadIdentity();
-        if(camera_mode) {
+        if(camera_mode || picking_mode) {
             glMultMatrixf(camera->getRotationMatrix());
             glMultMatrixf(camera->getTranslationMatrix());
             glMultMatrixf(shiftMinus100);
             glMultMatrixf(shape->getRotationMatrix());
             glMultMatrixf(shape->getTranslationMatrix());
         }
-        else if (global_mode || s_mode){
+        else if (global_mode || s_mode || picking_mode){
             glMultMatrixf(camera->getRotationMatrix());
             glMultMatrixf(camera->getTranslationMatrix());
             glMultMatrixf(shiftMinus100);
@@ -138,8 +138,8 @@ void drawObjects(){
             drawPolygon(shape->getColor(), *face);
         }
     }
-//    printModelviewMatrix();
-//    printProjectionMatrix();
+    printModelviewMatrix();
+    printProjectionMatrix();
     glFlush();
 }
 
@@ -186,12 +186,11 @@ void init(){
     initLight();
 }
 
-void list_hits(GLint hits, GLuint *names)
-{
+void list_hits(GLint hits, GLuint *names) {
     int i;
     printf("%d hits:\n", hits);
     for (i = 0; i < hits; i++)
-        printf( "Number: %d\n"
+        printf("Number: %d\n"
                "Min Z: %d\n"
                "Max Z: %d\n"
                "Name on stack: %d\n",
@@ -200,33 +199,30 @@ void list_hits(GLint hits, GLuint *names)
                (GLubyte)names[i * 4 + 2],
                (GLubyte)names[i * 4 + 3]
                );
-    
     printf("\n");
 }
 
 void pick_objects(int x, int y){
     int num_of_objects = shapes.size();
-    GLuint *buf;
-    buf = (GLuint*) calloc(num_of_objects, sizeof(GLuint));
+    GLuint buff[num_of_objects];
     GLint hits, view[4];
-    glSelectBuffer(num_of_objects, buf);
+    glSelectBuffer(64, buff);
     glGetIntegerv(GL_VIEWPORT, view);
-    glRenderMode(GL_SELECT);
+    hits = glRenderMode(GL_SELECT);
     glInitNames();
-    glPushName(-1);
+    glPushName(0);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
     gluPickMatrix(x, y, 1.0, 1.0, view);
-    gluPerspective(60, 1, 2, 500);
+    gluPerspective(60, 1.0, 2, 500);
     glMatrixMode(GL_MODELVIEW);
     drawObjects();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     hits = glRenderMode(GL_RENDER);
-    list_hits(hits, buf);
+    list_hits(hits, buff);
     glMatrixMode(GL_MODELVIEW);
-    drawObjects();
 }
 
 
@@ -295,7 +291,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
 
 void mouseClick(int button, int state, int x, int y){
     if (state == GLUT_UP)
-            printf("Mouse button %d pressed at %d %d\n", button, x, y);
+        printf("Mouse button %d pressed at %d %d\n", button, x, y);
     switch (button) {
         case GLUT_LEFT_BUTTON:
             left_button_pressed = !left_button_pressed;
@@ -312,16 +308,16 @@ void mouseClick(int button, int state, int x, int y){
             middle_button_pressed = !middle_button_pressed;
             break;
         case GLUT_RIGHT_BUTTON:
-            right_button_pressed = !right_button_pressed;
+            if (!right_button_pressed && picking_mode) {
+                pick_objects(x, WINDOW_HEIGHT - y);
+            }
             if (!right_button_pressed && !picking_mode) {
                 picking_mode = true;
                 camera_mode = global_mode = s_mode = false;
                 cout << "Entered picking mode" << endl;
                 pick_objects(x, WINDOW_HEIGHT - y);
             }
-            if (!right_button_pressed && picking_mode) {
-                pick_objects(x, WINDOW_HEIGHT - y);
-            }
+            right_button_pressed = !right_button_pressed;
     }
 }
 
@@ -329,7 +325,7 @@ void mouseMotion(int x, int y){
     if (x > WINDOW_WIDTH || y > WINDOW_HEIGHT || x < 0 || y < 0)
         return;
     if (left_button_pressed) {
-        if (camera_mode && !s_mode) { // camera mode
+        if (camera_mode) { // camera mode
             if (old_x - x > 0){         // rotate the scene from x axis to z axis
                 camera->rotate(Z_TO_X, 0.1, SCENE_ROTATION);
                 drawObjects();
@@ -351,7 +347,7 @@ void mouseMotion(int x, int y){
                 old_y = y;
             }
         }
-        else {
+        else if (s_mode || global_mode){
             glPushMatrix();
             Vector3f center = objectCenterOfMass();
             GLfloat shiftCenter[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, center.x, center.y, center.z, 1};
@@ -485,4 +481,5 @@ int main(int argc, char **argv) {
     glutMotionFunc(mouseMotion);
     glutMainLoop();
     return 0;
+    
 }
