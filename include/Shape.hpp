@@ -39,6 +39,7 @@ public:
     ObjectColor getColor();
     void lighten();
     void darken();
+    void erase();
 };
 
 

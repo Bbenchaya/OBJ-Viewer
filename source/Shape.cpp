@@ -90,3 +90,7 @@ void Shape::lighten(){
 void Shape::darken(){
     this->color.darken();
 }
+
+void Shape::erase(){
+    color.erase();
+}

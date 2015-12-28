@@ -22,6 +22,7 @@ bool camera_mode;
 bool s_mode;
 bool global_mode;
 bool picking_mode;
+bool erase_mode;
 bool axes;
 int old_x;
 int old_y;
@@ -38,7 +39,6 @@ GLfloat shiftMinus100[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -100, 1};
 GLfloat shiftPlus100[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 100, 1};
 GLfloat *shapeRotation;
 Vector3f id = Vector3f(0,0,0);
-
 
 void printModelviewMatrix(){
     float modelviewMatrix[16];
@@ -98,6 +98,7 @@ void drawPolygon(ObjectColor color, Face &face){
     glMaterialfv(GL_FRONT, GL_AMBIENT, color.getAmbient());
     glMaterialfv(GL_FRONT, GL_DIFFUSE, color.getDiffused());
     glMaterialfv(GL_FRONT, GL_SPECULAR, color.getSpecular());
+    glMaterialfv(GL_FRONT, GL_ALPHA, color.getAlpha());
     glBegin(GL_POLYGON);
     for (int i = 0; i < face.numOfVertices(); i++) {
         Vector3f normal = face.getPair(i).second;
@@ -108,15 +109,15 @@ void drawPolygon(ObjectColor color, Face &face){
     glEnd();
 }
 
-void drawObjects(){
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void drawObjects(GLenum mode){
+    
+    //    glAlphaFunc(GL_LESS, 0.5);
     int shape_number = 0;
-    //    drawAxes();
+    drawAxes();
     glMatrixMode(GL_MODELVIEW);
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
         if (picking_mode) {
             glLoadName(shape_number);
-            cout << "name loaded: " << shape_number << endl;
         }
         glLoadIdentity();
         if(camera_mode || picking_mode) {
@@ -137,9 +138,20 @@ void drawObjects(){
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
         }
+        if (picking_mode) {
+            //            Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
+            //            glTranslatef(-com.x, -com.y, -com.z);
+            glutSolidSphere(5, 50, 50);
+            //            glTranslatef(com.x, com.y, com.z);
+        }
     }
     printModelviewMatrix();
     printProjectionMatrix();
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    drawObjects(GL_RENDER);
     glFlush();
 }
 
@@ -166,6 +178,7 @@ void init(){
     glLoadIdentity();
     gluPerspective(60, 1, 2, 500);
     glEnable(GL_DEPTH_TEST);
+    //    glEnable(GL_ALPHA_TEST);
     glDepthFunc(GL_LESS);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -178,6 +191,7 @@ void init(){
     camera_mode = false;
     global_mode = true;
     picking_mode = false;
+    erase_mode = false;
     old_x = WINDOW_WIDTH / 2;
     old_y = WINDOW_HEIGHT / 2;
     camera = new Camera();
@@ -202,6 +216,17 @@ void list_hits(GLint hits, GLuint *names) {
     printf("\n");
 }
 
+void processPicks(GLint hits, GLuint *names) {
+    for (int i = 0; i < hits; i++)
+        shapes.at((GLubyte)names[i * 4 + 3]).pick();
+}
+
+void erasePickedObjects() {
+    for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+        shape->unPick();
+    }
+}
+
 void pick_objects(int x, int y){
     int num_of_objects = shapes.size();
     GLuint buff[num_of_objects];
@@ -217,59 +242,86 @@ void pick_objects(int x, int y){
     gluPickMatrix(x, y, 1.0, 1.0, view);
     gluPerspective(60, 1.0, 2, 500);
     glMatrixMode(GL_MODELVIEW);
-    drawObjects();
+    drawObjects(GL_SELECT);
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     hits = glRenderMode(GL_RENDER);
     list_hits(hits, buff);
+    processPicks(hits, buff);
+    if (erase_mode) {
+        erasePickedObjects();
+    }
     glMatrixMode(GL_MODELVIEW);
 }
 
+void unpickAllObjects() {
+    for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+        if (shape->isPicked()) {
+            shape->erase();
+        }
+    }
+}
+
+void lightenObjects(){
+    for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+        shape->lighten();
+    }
+}
+
+void darkenObjects(){
+    for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+        shape->darken();
+    }
+}
 
 void readKey(unsigned char key, int xmouse, int ymouse){
     switch (key){
         case 's':
+            unpickAllObjects();
             if (!s_mode) {
                 cout << "Entered s mode" << endl;
-                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
-                    shape->lighten();
-                }
-                drawObjects();
+                lightenObjects();
+                display();
             }
             s_mode = true;
             camera_mode = global_mode = picking_mode = false;
             break;
         case 'g':
+            unpickAllObjects();
             if (s_mode) {
-                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
-                    shape->darken();
-                }
-                drawObjects();
+                darkenObjects();
+                display();
             }
             if (!global_mode) {
                 cout << "Entered global mode" << endl;
             }
             global_mode = true;
-            camera_mode = s_mode = picking_mode = false;
+            camera_mode = s_mode = picking_mode = erase_mode = false;
             break;
         case 'c':
+            unpickAllObjects();
             if (s_mode) {
-                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
-                    shape->darken();
-                }
-                drawObjects();
+                darkenObjects();
+                display();
             }
             if (!camera_mode) {
                 cout << "Entered camera mode" << endl;
             }
             camera_mode = true;
-            global_mode = s_mode = picking_mode = false;
+            global_mode = s_mode = picking_mode = erase_mode = false;
             break;
         case 'r':
             break;
         case 't':
             break;
-        case 'i':
+        case 'l':
+            break;
+        case 'e':
+            if (picking_mode && !erase_mode) {
+                erase_mode = true;
+                camera_mode = global_mode = s_mode = false;
+                cout << "Entered erase mode" << endl;
+            }
             break;
         case '4':
             cout << "RESETTING SCENE" << endl;
@@ -282,7 +334,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             glGetFloatv(GL_MODELVIEW_MATRIX, camera->getRotationMatrix());
             global_mode = true;
             camera_mode = s_mode = picking_mode = false;
-            drawObjects();
+            display();
             break;
         case ESC:
             exit(0);
@@ -297,12 +349,15 @@ void mouseClick(int button, int state, int x, int y){
             left_button_pressed = !left_button_pressed;
             old_x = WINDOW_WIDTH / 2;
             old_y = WINDOW_HEIGHT / 2;
-            if (!left_button_pressed && picking_mode) {
-                cout << "Exited picking mode, entered global mode" << endl;
-                picking_mode = false;
-                camera_mode = s_mode = false;
-                global_mode = true;
-            }
+            //            if (!left_button_pressed && picking_mode) {
+            //                cout << "Exited picking mode, entered global mode" << endl;
+            //                picking_mode = false;
+            //                camera_mode = s_mode = false;
+            //                global_mode = true;
+            //                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+            //                    shape->unPick();
+            //                }
+            //            }
             break;
         case GLUT_MIDDLE_BUTTON:
             middle_button_pressed = !middle_button_pressed;
@@ -313,6 +368,10 @@ void mouseClick(int button, int state, int x, int y){
             }
             if (!right_button_pressed && !picking_mode) {
                 picking_mode = true;
+                if (s_mode) {
+                    darkenObjects();
+                    display();
+                }
                 camera_mode = global_mode = s_mode = false;
                 cout << "Entered picking mode" << endl;
                 pick_objects(x, WINDOW_HEIGHT - y);
@@ -328,22 +387,22 @@ void mouseMotion(int x, int y){
         if (camera_mode) { // camera mode
             if (old_x - x > 0){         // rotate the scene from x axis to z axis
                 camera->rotate(Z_TO_X, 0.1, SCENE_ROTATION);
-                drawObjects();
+                display();
                 old_x = x;
             }
             else {                      // rotate the scene from x axis to -z axis
                 camera->rotate(X_TO_Z, 0.1, SCENE_ROTATION);
-                drawObjects();
+                display();
                 old_x = x;
             }
             if (old_y - y > 0){         // rotate the scene from z axis to y axis
                 camera->rotate(Z_TO_Y, 0.1, SCENE_ROTATION);
-                drawObjects();
+                display();
                 old_y = y;
             }
             else {                      // rotate the scene from z axis to -y axis
                 camera->rotate(Y_TO_Z, 0.1, SCENE_ROTATION);
-                drawObjects();
+                display();
                 old_y = y;
             }
         }
@@ -364,7 +423,7 @@ void mouseMotion(int x, int y){
                 rotation_direction = X_TO_Z;
                 rotation_mode = OBJECT_ROTATION;
                 degree = 0.1;
-                drawObjects();
+                display();
                 degree = 0.0;
                 old_x = x;
             }
@@ -373,7 +432,7 @@ void mouseMotion(int x, int y){
                 rotation_direction = Z_TO_X;
                 rotation_mode = OBJECT_ROTATION;
                 degree = 0.1;
-                drawObjects();
+                display();
                 degree = 0.0;
                 old_x = x;
             }
@@ -382,7 +441,7 @@ void mouseMotion(int x, int y){
                 rotation_direction = Y_TO_Z;
                 rotation_mode = OBJECT_ROTATION;
                 degree = 0.1;
-                drawObjects();
+                display();
                 degree = 0.0;
                 old_y = y;
             }
@@ -391,7 +450,7 @@ void mouseMotion(int x, int y){
                 rotation_direction = Z_TO_Y;
                 rotation_mode = OBJECT_ROTATION;
                 degree = 0.1;
-                drawObjects();
+                display();
                 degree = 0.0;
                 old_y = y;
             }
@@ -411,22 +470,22 @@ void mouseMotion(int x, int y){
     else if (middle_button_pressed && !s_mode){
         if (old_x - x > 0){         // move object left
             camera->translate(LEFT);
-            drawObjects();
+            display();
             old_x = x;
         }
         else {                      // move object right
             camera->translate(RIGHT);
-            drawObjects();
+            display();
             old_x = x;
         }
         if (old_y - y > 0){         // move object up
             camera->translate(UP);
-            drawObjects();
+            display();
             old_y = y;
         }
         else {                      // move object down
             camera->translate(DOWN);
-            drawObjects();
+            display();
             old_y = y;
         }
     }
@@ -440,7 +499,7 @@ void mouseMotion(int x, int y){
                     shape->scale(ENLARGE);
                 }
             }
-            drawObjects();
+            display();
             old_y = y;
         }
         else {                      // zoom out or scale down
@@ -452,7 +511,7 @@ void mouseMotion(int x, int y){
                     shape->scale(SHRINK);
                 }
             }
-            drawObjects();
+            display();
             old_y = y;
         }
     }
@@ -471,11 +530,11 @@ int main(int argc, char **argv) {
     //            oc.printColor();
     //        }
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     glutCreateWindow("3D object rendering");
     init();
-    glutDisplayFunc(drawObjects);
+    glutDisplayFunc(display);
     glutKeyboardFunc(readKey);
     glutMouseFunc(mouseClick);
     glutMotionFunc(mouseMotion);
