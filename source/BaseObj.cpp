@@ -236,3 +236,16 @@ void BaseObj::scale(int kind){
             glPopMatrix();
     }
 }
+
+
+void BaseObj::pick(){
+    is_picked = true;
+}
+
+void BaseObj::unPick(){
+    is_picked = false;
+}
+
+bool BaseObj::isPicked(){
+    return is_picked;
+}

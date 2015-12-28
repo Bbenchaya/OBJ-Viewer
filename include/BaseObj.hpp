@@ -33,7 +33,7 @@ class BaseObj {
 private:
     GLfloat translation[16];
     GLfloat rotation[16];
-    
+    bool is_picked;
 public:
     BaseObj();
     GLfloat* getTranslationMatrix();
@@ -44,6 +44,9 @@ public:
     void translate(int direction);
     void rotate(int axis, float by_degree, int kind);
     void scale(int kind);
+    void pick();
+    void unPick();
+    bool isPicked();
 };
 
 #endif /* BaseObj_hpp */
