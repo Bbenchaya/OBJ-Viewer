@@ -20,6 +20,7 @@ bool right_button_pressed;
 bool camera_mode;
 bool s_mode;
 bool global_mode;
+bool picking_mode;
 bool axes;
 int old_x;
 int old_y;
@@ -170,7 +171,9 @@ void init(){
     middle_button_pressed = false;
     right_button_pressed = false;
     s_mode = false;
-    camera_mode = true;
+    camera_mode = false;
+    global_mode = true;
+    picking_mode = false;
     old_x = WINDOW_WIDTH / 2;
     old_y = WINDOW_HEIGHT / 2;
     camera = new Camera();
@@ -186,43 +189,86 @@ void init(){
 
 void readKey(unsigned char key, int xmouse, int ymouse){
     switch (key){
-        case DELETE:
-        case BACKSPACE:
-            if (s_mode) {
-                s_mode = false;
-                global_mode = true;
-            }
-            else{
-                if (!camera_mode) {
-                    cout << "Entered camera mode" << endl;
-                }
-                else
-                    cout << "Entered global mode" << endl;
-                camera_mode = !camera_mode;
-            }
-            break;
         case 's':
             if (!s_mode) {
                 cout << "Entered s mode" << endl;
-                global_mode = false;
-                camera_mode = false;
                 for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
                     shape->lighten();
                 }
                 drawObjects();
             }
-            else {
-                cout << "Exited s mode" << endl;
-                global_mode = true;
-                camera_mode = false;
+            s_mode = true;
+            camera_mode = global_mode = picking_mode = false;
+            break;
+        case 'g':
+            if (s_mode) {
                 for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
                     shape->darken();
                 }
                 drawObjects();
             }
-            s_mode = !s_mode;
+            if (!global_mode) {
+                cout << "Entered global mode" << endl;
+            }
+            global_mode = true;
+            camera_mode = s_mode = picking_mode = false;
+            break;
+        case 'c':
+            if (s_mode) {
+                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+                    shape->darken();
+                }
+                drawObjects();
+            }
+            if (!camera_mode) {
+                cout << "Entered camera mode" << endl;
+            }
+            camera_mode = true;
+            global_mode = s_mode = picking_mode = false;
             break;
         case 'r':
+            break;
+        case 't':
+            break;
+        case 'i':
+            break;
+            //        case DELETE:
+            //        case BACKSPACE:
+            //            if (s_mode) {
+            //                s_mode = false;
+            //                global_mode = true;
+            //            }
+            //            else{
+            //                if (!camera_mode) {
+            //                    cout << "Entered camera mode" << endl;
+            //                }
+            //                else
+            //                    cout << "Entered global mode" << endl;
+            //                camera_mode = !camera_mode;
+            //            }
+            //            break;
+            //        case 's':
+            //            if (!s_mode) {
+            //                cout << "Entered s mode" << endl;
+            //                global_mode = false;
+            //                camera_mode = false;
+            //                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+            //                    shape->lighten();
+            //                }
+            //                drawObjects();
+            //            }
+            //            else {
+            //                cout << "Exited s mode" << endl;
+            //                global_mode = true;
+            //                camera_mode = false;
+            //                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+            //                    shape->darken();
+            //                }
+            //                drawObjects();
+            //            }
+            //            s_mode = !s_mode;
+            //            break;
+        case '4':
             cout << "RESETTING SCENE" << endl;
             glLoadIdentity();
             for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
@@ -231,6 +277,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             }
             glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
             glGetFloatv(GL_MODELVIEW_MATRIX, camera->getRotationMatrix());
+            
             drawObjects();
     }
 }
@@ -241,12 +288,23 @@ void mouseClick(int button, int state, int x, int y){
             left_button_pressed = !left_button_pressed;
             old_x = WINDOW_WIDTH / 2;
             old_y = WINDOW_HEIGHT / 2;
+            if (!left_button_pressed && picking_mode) {
+                cout << "Exited picking mode, entered global mode" << endl;
+                picking_mode = false;
+                camera_mode = s_mode = false;
+                global_mode = true;
+            }
             break;
         case GLUT_MIDDLE_BUTTON:
             middle_button_pressed = !middle_button_pressed;
             break;
         case GLUT_RIGHT_BUTTON:
             right_button_pressed = !right_button_pressed;
+            if (!right_button_pressed && !picking_mode) {
+                picking_mode = true;
+                camera_mode = global_mode = s_mode = false;
+                cout << "Entered picking mode" << endl;
+            }
     }
 }
 
