@@ -10,6 +10,7 @@
 #define WINDOW_HEIGHT 512
 #define DELETE 127
 #define BACKSPACE 8
+#define ESC 27
 
 #include "Scene.hpp"
 
@@ -109,11 +110,14 @@ void drawPolygon(ObjectColor color, Face &face){
 
 void drawObjects(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    int shape_number = 0;
     drawAxes();
-    //    glMatrixMode(GL_MODELVIEW);
-    //    glLoadIdentity();
-    
-    for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+    glMatrixMode(GL_MODELVIEW);
+    for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
+        if (picking_mode) {
+            glPushName(shape_number);
+            cout << "name loaded: " << shape_number << endl;
+        }
         glLoadIdentity();
         if(camera_mode) {
             glMultMatrixf(camera->getRotationMatrix());
@@ -134,8 +138,8 @@ void drawObjects(){
             drawPolygon(shape->getColor(), *face);
         }
     }
-    printModelviewMatrix();
-    printProjectionMatrix();
+//    printModelviewMatrix();
+//    printProjectionMatrix();
     glFlush();
 }
 
@@ -157,7 +161,7 @@ void initLight(){
 void init(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0, 0, 0, 1);
-    glViewport(0, 0, 512, 512);
+    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(60, 1, 2, 500);
@@ -182,9 +186,48 @@ void init(){
     initLight();
 }
 
-//void gl_select(){
-//
-//}
+void list_hits(GLint hits, GLuint *names)
+{
+    int i;
+    printf("%d hits:\n", hits);
+    for (i = 0; i < hits; i++)
+        printf( "Number: %d\n"
+               "Min Z: %d\n"
+               "Max Z: %d\n"
+               "Name on stack: %d\n",
+               (GLubyte)names[i * 4],
+               (GLubyte)names[i * 4 + 1],
+               (GLubyte)names[i * 4 + 2],
+               (GLubyte)names[i * 4 + 3]
+               );
+    
+    printf("\n");
+}
+
+void pick_objects(int x, int y){
+    int num_of_objects = shapes.size();
+    GLuint *buf;
+    buf = (GLuint*) calloc(num_of_objects, sizeof(GLuint));
+    GLint hits, view[4];
+    glSelectBuffer(num_of_objects, buf);
+    glGetIntegerv(GL_VIEWPORT, view);
+    glRenderMode(GL_SELECT);
+    glInitNames();
+    glPushName(-1);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluPickMatrix(x, y, 1.0, 1.0, view);
+    gluPerspective(60, 1, 2, 500);
+    glMatrixMode(GL_MODELVIEW);
+    drawObjects();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    hits = glRenderMode(GL_RENDER);
+    list_hits(hits, buf);
+    glMatrixMode(GL_MODELVIEW);
+    drawObjects();
+}
 
 
 void readKey(unsigned char key, int xmouse, int ymouse){
@@ -244,10 +287,15 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             global_mode = true;
             camera_mode = s_mode = picking_mode = false;
             drawObjects();
+            break;
+        case ESC:
+            exit(0);
     }
 }
 
 void mouseClick(int button, int state, int x, int y){
+    if (state == GLUT_UP)
+            printf("Mouse button %d pressed at %d %d\n", button, x, y);
     switch (button) {
         case GLUT_LEFT_BUTTON:
             left_button_pressed = !left_button_pressed;
@@ -269,6 +317,10 @@ void mouseClick(int button, int state, int x, int y){
                 picking_mode = true;
                 camera_mode = global_mode = s_mode = false;
                 cout << "Entered picking mode" << endl;
+                pick_objects(x, WINDOW_HEIGHT - y);
+            }
+            if (!right_button_pressed && picking_mode) {
+                pick_objects(x, WINDOW_HEIGHT - y);
             }
     }
 }
@@ -409,145 +461,6 @@ void mouseMotion(int x, int y){
         }
     }
 }
-
-
-//void mouseMotion(int x, int y){
-//    if (x > WINDOW_WIDTH || y > WINDOW_HEIGHT || x < 0 || y < 0)
-//        return;
-//    if (left_button_pressed) {
-//        if (camera_mode) { // camera mode
-//            if (old_x - x > 0){         // rotate the scene from x axis to z axis
-//                camera->rotate(Z_TO_X, 0.1, SCENE_ROTATION);
-//                drawObjects();
-//                old_x = x;
-//            }
-//            else {                      // rotate the scene from x axis to -z axis
-//                camera->rotate(X_TO_Z, 0.1, SCENE_ROTATION);
-//                drawObjects();
-//                old_x = x;
-//            }
-//            if (old_y - y > 0){         // rotate the scene from z axis to y axis
-//                camera->rotate(Z_TO_Y, 0.1, SCENE_ROTATION);
-//                drawObjects();
-//                old_y = y;
-//            }
-//            else {                      // rotate the scene from z axis to -y axis
-//                camera->rotate(Y_TO_Z, 0.1, SCENE_ROTATION);
-//                drawObjects();
-//                old_y = y;
-//            }
-//        }
-//        else{
-//            glPushMatrix();
-//            Vector3f center = objectCenterOfMass();
-//            GLfloat shiftCenter[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, center.x, center.y, center.z, 1};
-//            GLfloat shiftBack[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -center.x, -center.y, -center.z, 1};
-//            if (s_mode) {
-//                glPushMatrix();
-//                glLoadMatrixf(camera->getTranslationMatrix());
-//                glMultMatrixf(shiftCenter);
-//                glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
-//                glPopMatrix();
-//            }
-//            if (old_x - x > 0){         // rotate the scene from x axis to z axis
-//                //                camera->rotate(X_TO_Z, 0.1, OBJECT_ROTATION);
-//                rotation_direction = X_TO_Z;
-//                rotation_mode = OBJECT_ROTATION;
-//                degree = 0.1;
-//                drawObjects();
-//                degree = 0.0;
-//                old_x = x;
-//            }
-//            else {                      // rotate the scene from x axis to -z axis
-//                //                camera->rotate(Z_TO_X, 0.1, OBJECT_ROTATION);
-//                rotation_direction = Z_TO_X;
-//                rotation_mode = OBJECT_ROTATION;
-//                degree = 0.1;
-//                drawObjects();
-//                degree = 0.0;
-//                old_x = x;
-//            }
-//            if (old_y - y > 0){         // rotate the scene from z axis to y axis
-//                //                camera->rotate(Z_TO_Y, 0.1, OBJECT_ROTATION);
-//                rotation_direction = Y_TO_Z;
-//                rotation_mode = OBJECT_ROTATION;
-//                degree = 0.1;
-//                drawObjects();
-//                degree = 0.0;
-//                old_y = y;
-//            }
-//            else {                      // rotate the scene from z axis to -y axis
-//                //                camera->rotate(Y_TO_Z, 0.1, OBJECT_ROTATION);
-//                rotation_direction = Z_TO_Y;
-//                rotation_mode = OBJECT_ROTATION;
-//                degree = 0.1;
-//                drawObjects();
-//                degree = 0.0;
-//                old_y = y;
-//            }
-//            if (s_mode) {
-//                glPushMatrix();
-//                glLoadMatrixf(camera->getTranslationMatrix());
-//                glMultMatrixf(shiftBack);
-//                glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
-//                glPopMatrix();
-//                //                glPushMatrix();
-//                //                glMultMatrixf(shiftBack);
-//                //                glPopMatrix();
-//            }
-//            glPopMatrix();
-//        }
-//    }
-//    else if (middle_button_pressed && (camera_mode || global_mode)){
-//        if (old_x - x > 0){         // move object left
-//            camera->translate(LEFT);
-//            drawObjects();
-//            old_x = x;
-//        }
-//        else {                      // move object right
-//            camera->translate(RIGHT);
-//            drawObjects();
-//            old_x = x;
-//        }
-//        if (old_y - y > 0){         // move object up
-//            camera->translate(UP);
-//            drawObjects();
-//            old_y = y;
-//        }
-//        else {                      // move object down
-//            camera->translate(DOWN);
-//            drawObjects();
-//            old_y = y;
-//        }
-//    }
-//    else if (right_button_pressed){ // right button is pressed
-//        if (old_y - y > 0){         // zoom in or scale up
-//            if (camera_mode) {
-//                camera->translate(NEARER);
-//            }
-//            else {                  // s mode\global mode
-//                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
-//                    shape->scale(ENLARGE);
-//                }
-//            }
-//            drawObjects();
-//            old_y = y;
-//        }
-//        else {                      // zoom out or scale down
-//            if (camera_mode) {
-//                camera->translate(FARTEHR);
-//            }
-//            else {                  // s mode\global mode
-//                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
-//                    shape->scale(SHRINK);
-//                }
-//            }
-//            drawObjects();
-//            old_y = y;
-//        }
-//    }
-//}
-
 
 int main(int argc, char **argv) {
     Parser parser;
