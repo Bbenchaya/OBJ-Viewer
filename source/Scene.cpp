@@ -11,10 +11,12 @@
 #define DELETE 127
 #define BACKSPACE 8
 #define ESC 27
+#define Z_NEAR 2
+#define Z_FAR 500
+#define FOV 60
 
 #include "Scene.hpp"
 
-bool play;
 bool left_button_pressed;
 bool middle_button_pressed;
 bool right_button_pressed;
@@ -22,7 +24,7 @@ bool camera_mode;
 bool s_mode;
 bool global_mode;
 bool picking_mode;
-bool erase_mode;
+bool erase_obj;
 bool rotate_obj;
 bool translate_obj;
 bool scale_obj;
@@ -33,17 +35,13 @@ int rotation_direction;
 int rotation_mode;
 int picking_scale_mode;
 int picking_translation_mode;
-
 float degree;
 unordered_map<int, Vector3f> vertexTable;
 unordered_map<int, Vector3f> normalTable;
 vector<Shape> shapes;
 vector<ObjectColor> colors;
-Camera *camera;
+Camera camera;
 GLfloat shiftMinus100[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -100, 1};
-GLfloat shiftPlus100[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 100, 1};
-GLfloat *shapeRotation;
-Vector3f id = Vector3f(0,0,0);
 BaseObj accumulate_for_axes;
 
 void printModelviewMatrix(){
@@ -69,8 +67,6 @@ void printProjectionMatrix(){
 }
 
 void drawAxes(){
-    //        glMatrixMode(GL_PROJECTION);
-    //    glPushMatrix();
     glLineWidth(1.5);
     glBegin(GL_LINES);
     glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
@@ -80,8 +76,6 @@ void drawAxes(){
     glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0,0,1));
     glVertex3fv(Vector3f(0,0,50));  glVertex3fv(Vector3f(0,0,0));
     glEnd();
-    //    glPopMatrix();
-    //    glMatrixMode(GL_MODELVIEW);
 }
 
 Vector3f objectCenterOfMass(){
@@ -119,15 +113,13 @@ void drawObjects(GLenum mode){
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
         Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
         glLoadIdentity();
-        glMultMatrixf(camera->getRotationMatrix());
-        glMultMatrixf(camera->getTranslationMatrix());
+        glMultMatrixf(camera.getRotationMatrix());
+        glMultMatrixf(camera.getTranslationMatrix());
         glMultMatrixf(shiftMinus100);
         glPushMatrix();
         switch (mode) {
             case GL_SELECT:
                 glLoadName(shape_number);
-                glMultMatrixf(shape->getTranslationMatrix());
-                glMultMatrixf(shape->getRotationMatrix());
                 break;
             case GL_RENDER:
                 if (picking_mode) {
@@ -141,38 +133,35 @@ void drawObjects(GLenum mode){
                         }
                     }
                 }
-                else if (global_mode){
+                else if (global_mode || camera_mode){
                     shape->rotate(rotation_direction, degree, rotation_mode);
                 }
                 else if (s_mode) {
                     shape->autorotate(rotation_direction, degree);
                 }
-                glMultMatrixf(shape->getRotationMatrix());
-                glMultMatrixf(shape->getTranslationMatrix());
-                glPushMatrix();
-                glLoadIdentity();
-                glTranslatef(com.x, com.y, com.z);
-                glMultMatrixf(shape->getAutorotationMatrix());
-                glTranslatef(-com.x, -com.y, -com.z);
-                GLfloat temp[16];
-                glGetFloatv(GL_MODELVIEW_MATRIX, temp);
-                glPopMatrix();
-                glMultMatrixf(temp);
         }
+        glMultMatrixf(shape->getRotationMatrix());
+        glMultMatrixf(shape->getTranslationMatrix());
+        glPushMatrix();
+        glLoadIdentity();
+        glTranslatef(com.x, com.y, com.z);
+        glMultMatrixf(shape->getAutorotationMatrix());
+        glTranslatef(-com.x, -com.y, -com.z);
+        GLfloat temp[16];
+        glGetFloatv(GL_MODELVIEW_MATRIX, temp);
+        glPopMatrix();
+        glMultMatrixf(temp);
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
         }
-        switch (mode) {
-            case GL_RENDER:
-                if (picking_mode && shape->isPicked()) {
-                    glDisable(GL_DEPTH_TEST);
-                    Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
-                    glTranslatef(com.x, com.y, com.z);
-                    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
-                    glutSolidSphere(0.3, 50, 50);
-                    glTranslatef(-com.x, -com.y, -com.z);
-                    glEnable(GL_DEPTH_TEST);
-                }
+        if (mode == GL_RENDER && picking_mode && shape->isPicked()) {
+            glDisable(GL_DEPTH_TEST);
+            Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
+            glTranslatef(com.x, com.y, com.z);
+            glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
+            glutSolidSphere(0.3, 50, 50);
+            glTranslatef(-com.x, -com.y, -com.z);
+            glEnable(GL_DEPTH_TEST);
         }
     }
     glPopMatrix();
@@ -190,20 +179,17 @@ void drawObjects(GLenum mode){
 }
 
 void display() {
-    glClear(GL_DEPTH_BUFFER_BIT);
-    if (!translate_obj) {
-        glClear(GL_COLOR_BUFFER_BIT);
-    }
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     drawObjects(GL_RENDER);
     glFlush();
 }
 
 void initLight(){
-    GLfloat light_direction[] = {0, 0, 1};
+    //    GLfloat light_direction[] = {0, 0, 1};
     GLfloat light_ambient[] = {0.5, 0.5, 0.5};
     GLfloat light_diffuse[] = {0, 0.5, 0.5};
     GLfloat light_specular[] = {0, 0.0, 0.5};
-    GLfloat angle[] = {5.0};
+    //    GLfloat angle[] = {5.0};
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
@@ -219,14 +205,13 @@ void init(){
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60, 1, 2, 500);
+    gluPerspective(FOV, 1, Z_NEAR, Z_FAR);
     glEnable(GL_DEPTH_TEST);
     //    glEnable(GL_ALPHA_TEST);
     glDepthFunc(GL_LESS);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     degree = 0;
-    play = true;
     left_button_pressed = false;
     middle_button_pressed = false;
     right_button_pressed = false;
@@ -234,14 +219,14 @@ void init(){
     camera_mode = false;
     global_mode = true;
     picking_mode = false;
-    erase_mode = false;
+    erase_obj = false;
+    rotate_obj = false;
+    translate_obj = false;
+    scale_obj = false;
     old_x = WINDOW_WIDTH / 2;
     old_y = WINDOW_HEIGHT / 2;
-    camera = new Camera();
     printModelviewMatrix();
     printProjectionMatrix();
-    //    shapeRotation = (GLfloat*) malloc(sizeof(GLfloat) * 16);
-    //    glGetFloatv(GL_MODELVIEW, shapeRotation);
     initLight();
 }
 
@@ -273,8 +258,7 @@ void erasePickedObjects() {
 }
 
 void pick_objects(int x, int y){
-    int num_of_objects = shapes.size();
-    GLuint buff[num_of_objects];
+    GLuint buff[shapes.size()];
     GLint hits, view[4];
     glSelectBuffer(64, buff);
     glGetIntegerv(GL_VIEWPORT, view);
@@ -285,7 +269,7 @@ void pick_objects(int x, int y){
     glPushMatrix();
     glLoadIdentity();
     gluPickMatrix(x, y, 1.0, 1.0, view);
-    gluPerspective(60, 1.0, 2, 500);
+    gluPerspective(FOV, 1.0, Z_NEAR, Z_FAR);
     glMatrixMode(GL_MODELVIEW);
     drawObjects(GL_SELECT);
     glMatrixMode(GL_PROJECTION);
@@ -293,10 +277,10 @@ void pick_objects(int x, int y){
     hits = glRenderMode(GL_RENDER);
     //    list_hits(hits, buff);
     processPicks(hits, buff);
-    if (erase_mode) {
+    if (erase_obj) {
         erasePickedObjects();
     }
-    glMatrixMode(GL_MODELVIEW);
+//    glMatrixMode(GL_MODELVIEW);
     display();
 }
 
@@ -304,7 +288,7 @@ void unpickAllObjects() {
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
         shape->unPick();
     }
-    translate_obj = scale_obj = rotate_obj = false;
+    translate_obj = scale_obj = rotate_obj = erase_obj = false;
 }
 
 void lightenObjects(){
@@ -340,7 +324,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
                 cout << "Entered global mode" << endl;
             }
             global_mode = true;
-            camera_mode = s_mode = picking_mode = erase_mode = false;
+            camera_mode = s_mode = picking_mode = false;
             display();
             break;
         case 'c':
@@ -352,7 +336,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
                 cout << "Entered camera mode" << endl;
             }
             camera_mode = true;
-            global_mode = s_mode = picking_mode = erase_mode = false;
+            global_mode = s_mode = picking_mode = false;
             display();
             break;
         case 'r':
@@ -377,8 +361,8 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             }
             break;
         case 'e':
-            if (picking_mode && !erase_mode) {
-                erase_mode = true;
+            if (picking_mode && !erase_obj) {
+                erase_obj = true;
                 camera_mode = global_mode = s_mode = false;
                 rotate_obj = translate_obj = scale_obj = false;
                 cout << "Picking mode: erase sub-mode" << endl;
@@ -389,19 +373,13 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             glLoadIdentity();
             for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
                 shape->reset();
-                //                glGetFloatv(GL_MODELVIEW_MATRIX, shape->getTranslationMatrix());
-                //                glGetFloatv(GL_MODELVIEW_MATRIX, shape->getRotationMatrix());
             }
             if (s_mode) {
                 darkenObjects();
             }
             unpickAllObjects();
-            camera->reset();
+            camera.reset();
             accumulate_for_axes.reset();
-            //            glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
-            //            glGetFloatv(GL_MODELVIEW_MATRIX, camera->getRotationMatrix());
-            //            glGetFloatv(GL_MODELVIEW_MATRIX, accumulate_for_axes.getTranslationMatrix());
-            //            glGetFloatv(GL_MODELVIEW_MATRIX, accumulate_for_axes.getRotationMatrix());
             global_mode = true;
             camera_mode = s_mode = picking_mode = false;
             picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
@@ -433,7 +411,6 @@ void mouseClick(int button, int state, int x, int y){
                 //                picking_mode = true;
                 if (s_mode) {
                     darkenObjects();
-                    display();
                 }
                 camera_mode = global_mode = s_mode = false;
                 cout << "Entered picking mode" << endl;
@@ -452,22 +429,22 @@ void mouseMotion(int x, int y){
     if (left_button_pressed) {
         if (camera_mode) { // camera mode
             if (old_x - x > 0){         // rotate the scene from x axis to z axis
-                camera->rotate(Z_TO_X, 0.1, SCENE_ROTATION);
+                camera.rotate(Z_TO_X, 0.1, SCENE_ROTATION);
                 display();
                 old_x = x;
             }
             else {                      // rotate the scene from x axis to -z axis
-                camera->rotate(X_TO_Z, 0.1, SCENE_ROTATION);
+                camera.rotate(X_TO_Z, 0.1, SCENE_ROTATION);
                 display();
                 old_x = x;
             }
             if (old_y - y > 0){         // rotate the scene from z axis to y axis
-                camera->rotate(Z_TO_Y, 0.1, SCENE_ROTATION);
+                camera.rotate(Z_TO_Y, 0.1, SCENE_ROTATION);
                 display();
                 old_y = y;
             }
             else {                      // rotate the scene from z axis to -y axis
-                camera->rotate(Y_TO_Z, 0.1, SCENE_ROTATION);
+                camera.rotate(Y_TO_Z, 0.1, SCENE_ROTATION);
                 display();
                 old_y = y;
             }
@@ -502,20 +479,8 @@ void mouseMotion(int x, int y){
                     }
                 }
             }
-            if (!translate_obj) {
-                //                glPushMatrix();
-                //                Vector3f center = objectCenterOfMass();
-                //                GLfloat shiftCenter[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, center.x, center.y, center.z, 1};
-                //                GLfloat shiftBack[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -center.x, -center.y, -center.z, 1};
-                //                if (s_mode) {
-                //                    glPushMatrix();
-                //                    glLoadMatrixf(camera->getTranslationMatrix());
-                //                    glMultMatrixf(shiftCenter);
-                //                    glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
-                //                    glPopMatrix();
-                //                }
+            if (!(translate_obj || scale_obj)) {
                 if (old_x - x > 0){         // rotate the scene from x axis to z axis
-                    //                camera->rotate(X_TO_Z, 0.1, OBJECT_ROTATION);
                     rotation_direction = X_TO_Z;
                     rotation_mode = OBJECT_ROTATION;
                     degree = 0.1;
@@ -524,7 +489,6 @@ void mouseMotion(int x, int y){
                     old_x = x;
                 }
                 else {                      // rotate the scene from x axis to -z axis
-                    //                camera->rotate(Z_TO_X, 0.1, OBJECT_ROTATION);
                     rotation_direction = Z_TO_X;
                     rotation_mode = OBJECT_ROTATION;
                     degree = 0.1;
@@ -533,7 +497,6 @@ void mouseMotion(int x, int y){
                     old_x = x;
                 }
                 if (old_y - y > 0){         // rotate the scene from z axis to y axis
-                    //                camera->rotate(Z_TO_Y, 0.1, OBJECT_ROTATION);
                     rotation_direction = Y_TO_Z;
                     rotation_mode = OBJECT_ROTATION;
                     degree = 0.1;
@@ -542,7 +505,6 @@ void mouseMotion(int x, int y){
                     old_y = y;
                 }
                 else {                      // rotate the scene from z axis to -y axis
-                    //                camera->rotate(Y_TO_Z, 0.1, OBJECT_ROTATION);
                     rotation_direction = Z_TO_Y;
                     rotation_mode = OBJECT_ROTATION;
                     degree = 0.1;
@@ -550,35 +512,27 @@ void mouseMotion(int x, int y){
                     degree = 0.0;
                     old_y = y;
                 }
-                //                if (s_mode) {
-                //                    glPushMatrix();
-                //                    glLoadMatrixf(camera->getTranslationMatrix());
-                //                    glMultMatrixf(shiftBack);
-                //                    glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
-                //                    glPopMatrix();
-                //                }
-                //                glPopMatrix();
             }
         }
     }
     else if (middle_button_pressed && !picking_mode){
         if (old_x - x > 0){         // move object left
-            camera->translate(LEFT);
+            camera.translate(LEFT);
             display();
             old_x = x;
         }
         else {                      // move object right
-            camera->translate(RIGHT);
+            camera.translate(RIGHT);
             display();
             old_x = x;
         }
         if (old_y - y > 0){         // move object up
-            camera->translate(UP);
+            camera.translate(UP);
             display();
             old_y = y;
         }
         else {                      // move object down
-            camera->translate(DOWN);
+            camera.translate(DOWN);
             display();
             old_y = y;
         }
@@ -586,7 +540,7 @@ void mouseMotion(int x, int y){
     else if (right_button_pressed && !picking_mode){ // right button is pressed
         if (old_y - y > 0){         // zoom in or scale up
             if (camera_mode) {
-                camera->translate(NEARER);
+                camera.translate(NEARER);
             }
             else {                  // s mode\global mode
                 for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
@@ -598,7 +552,7 @@ void mouseMotion(int x, int y){
         }
         else {                      // zoom out or scale down
             if (camera_mode) {
-                camera->translate(FARTEHR);
+                camera.translate(FARTEHR);
             }
             else {                  // s mode\global mode
                 for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
