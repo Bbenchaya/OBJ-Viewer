@@ -31,6 +31,8 @@ int old_x;
 int old_y;
 int rotation_direction;
 int rotation_mode;
+int picking_scale_mode;
+int picking_translation_mode;
 
 float degree;
 unordered_map<int, Vector3f> vertexTable;
@@ -72,11 +74,11 @@ void drawAxes(){
     
     glBegin(GL_LINES);
     glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
-    glVertex3fv(Vector3f(50,0,0));  glVertex3fv(Vector3f(-50,0,0));
+    glVertex3fv(Vector3f(50,0,0));  glVertex3fv(Vector3f(0,0,0));
     glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0,1,0));
-    glVertex3fv(Vector3f(0,50,0));  glVertex3fv(Vector3f(0,-50,0));
+    glVertex3fv(Vector3f(0,50,0));  glVertex3fv(Vector3f(0,0,0));
     glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0,0,1));
-    glVertex3fv(Vector3f(0,0,50));  glVertex3fv(Vector3f(0,0,-50));
+    glVertex3fv(Vector3f(0,0,50));  glVertex3fv(Vector3f(0,0,0));
     glEnd();
     
     glPopMatrix();
@@ -113,45 +115,92 @@ void drawPolygon(ObjectColor color, Face &face){
 }
 
 void drawObjects(GLenum mode){
-    
-    //    glAlphaFunc(GL_LESS, 0.5);
     int shape_number = 0;
     glMatrixMode(GL_MODELVIEW);
     
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
-        if (picking_mode) {
-            glLoadName(shape_number);
-        }
         glLoadIdentity();
-        if(camera_mode || picking_mode) {
-            glMultMatrixf(camera->getRotationMatrix());
-            glMultMatrixf(camera->getTranslationMatrix());
-            glMultMatrixf(shiftMinus100);
-            glMultMatrixf(shape->getRotationMatrix());
-            glMultMatrixf(shape->getTranslationMatrix());
-        }
-        else if (global_mode || s_mode || picking_mode){
-            glMultMatrixf(camera->getRotationMatrix());
-            glMultMatrixf(camera->getTranslationMatrix());
-            glMultMatrixf(shiftMinus100);
-            shape->rotate(rotation_direction, degree, rotation_mode);
-            glMultMatrixf(shape->getRotationMatrix());
-            glMultMatrixf(shape->getTranslationMatrix());
+        glMultMatrixf(camera->getRotationMatrix());
+        glMultMatrixf(camera->getTranslationMatrix());
+        glMultMatrixf(shiftMinus100);
+        switch (mode) {
+            case GL_SELECT:
+                glLoadName(shape_number);
+                glMultMatrixf(shape->getTranslationMatrix());
+                glMultMatrixf(shape->getRotationMatrix());
+                break;
+            case GL_RENDER:
+                if (picking_mode) {
+                    if (shape->isPicked()) {
+                        if (scale_obj) {
+                            switch (picking_scale_mode) {
+                                case ENLARGE:
+                                    shape->scale(ENLARGE);
+                                    break;
+                                case SHRINK:
+                                    shape->scale(SHRINK);
+                            }
+                        } else if (rotate_obj) {
+                            shape->rotate(rotation_direction, degree, rotation_mode);
+                            glMultMatrixf(shape->getRotationMatrix());
+                            glMultMatrixf(shape->getTranslationMatrix());
+                        } else {
+                            switch (picking_translation_mode) {
+                                case UP:
+                                    shape->translate(UP);
+                                    break;
+                                case DOWN:
+                                    shape->translate(DOWN);
+                                    break;
+                                case LEFT:
+                                    shape->translate(LEFT);
+                                    break;
+                                case RIGHT:
+                                    shape->translate(RIGHT);
+                            }
+                        }
+                        glMultMatrixf(shape->getTranslationMatrix());
+                        glMultMatrixf(shape->getRotationMatrix());
+                    }
+                    else {
+                        glMultMatrixf(shape->getTranslationMatrix());
+                        glMultMatrixf(shape->getRotationMatrix());
+                    }
+                }
+                else if(camera_mode) {
+                    glMultMatrixf(shape->getRotationMatrix());
+                    glMultMatrixf(shape->getTranslationMatrix());
+                }
+                else if (global_mode || s_mode){
+                    shape->rotate(rotation_direction, degree, rotation_mode);
+                    glMultMatrixf(shape->getRotationMatrix());
+                    glMultMatrixf(shape->getTranslationMatrix());
+                }
         }
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
         }
-        
-        if (picking_mode && shape->isPicked()) {
-            glDisable(GL_DEPTH_TEST);
-            Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
-            glTranslatef(com.x, com.y, com.z);
-            glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
-            glutSolidSphere(1, 50, 50);
-            glTranslatef(-com.x, -com.y, -com.z);
-            glEnable(GL_DEPTH_TEST);
+        switch (mode) {
+            case GL_RENDER:
+                if (picking_mode && shape->isPicked()) {
+                    glDisable(GL_DEPTH_TEST);
+                    Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
+                    glTranslatef(com.x, com.y, com.z);
+                    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
+                    glutSolidSphere(0.3, 50, 50);
+                    glTranslatef(-com.x, -com.y, -com.z);
+                    glEnable(GL_DEPTH_TEST);
+                }
         }
-        drawAxes();
+    }
+    // draw the axes only once
+    switch (mode) {
+        case GL_RENDER:
+            //            glLoadIdentity();
+            glMultMatrixf(camera->getRotationMatrix());
+            glMultMatrixf(camera->getTranslationMatrix());
+            //            glMultMatrixf(shiftMinus100);
+            drawAxes();
     }
     printModelviewMatrix();
     printProjectionMatrix();
@@ -265,9 +314,11 @@ void pick_objects(int x, int y){
 void unpickAllObjects() {
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
         if (shape->isPicked()) {
-            shape->erase();
+            shape->unPick();
         }
     }
+    translate_obj = scale_obj = rotate_obj = false;
+    
 }
 
 void lightenObjects(){
@@ -319,18 +370,24 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             global_mode = s_mode = picking_mode = erase_mode = false;
             break;
         case 'r':
-            if (picking_mode) {
+            if (picking_mode && !rotate_obj) {
                 rotate_obj = true;
+                translate_obj = scale_obj = false;
+                cout << "Picking mode: rotation sub-mode" << endl;
             }
             break;
         case 't':
-            if (picking_mode) {
+            if (picking_mode && !translate_obj) {
                 translate_obj = true;
+                rotate_obj = scale_obj = false;
+                cout << "Picking mode: translation sub-mode" << endl;
             }
             break;
         case 'l':
-            if (picking_mode) {
+            if (picking_mode && !scale_obj) {
                 scale_obj = true;
+                rotate_obj = translate_obj = false;
+                cout << "Picking mode: scaling sub-mode" << endl;
             }
             break;
         case 'e':
@@ -367,18 +424,17 @@ void mouseClick(int button, int state, int x, int y){
             left_button_pressed = !left_button_pressed;
             old_x = WINDOW_WIDTH / 2;
             old_y = WINDOW_HEIGHT / 2;
-            //            if (!left_button_pressed && picking_mode) {
-            //                cout << "Exited picking mode, entered global mode" << endl;
-            //                picking_mode = false;
-            //                camera_mode = s_mode = false;
-            //                global_mode = true;
-            //                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
-            //                    shape->unPick();
-            //                }
-            //            }
-            break;
-        case GLUT_MIDDLE_BUTTON:
-            middle_button_pressed = !middle_button_pressed;
+            if (picking_mode) {
+                if (rotate_obj) {
+                    
+                }
+                else if (scale_obj) {
+                    
+                }
+                else {
+                    
+                }
+            }
             break;
         case GLUT_RIGHT_BUTTON:
             if (!right_button_pressed && picking_mode) {
@@ -478,14 +534,43 @@ void mouseMotion(int x, int y){
                 glMultMatrixf(shiftBack);
                 glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
                 glPopMatrix();
-                //                glPushMatrix();
-                //                glMultMatrixf(shiftBack);
-                //                glPopMatrix();
             }
             glPopMatrix();
         }
+        else { // picking mode
+            if (scale_obj) {
+                picking_scale_mode = old_y - y > 0 ? ENLARGE : SHRINK;
+                old_y = y;
+                display();
+            }
+            else if (rotate_obj) {
+                
+            }
+            else {
+                if (old_x - x > 0){         // move object left
+                    picking_translation_mode = LEFT;
+                    display();
+                    old_x = x;
+                }
+                else {                      // move object right
+                    picking_translation_mode = RIGHT;
+                    display();
+                    old_x = x;
+                }
+                if (old_y - y > 0){         // move object up
+                    picking_translation_mode = UP;
+                    display();
+                    old_y = y;
+                }
+                else {                      // move object down
+                    picking_translation_mode = DOWN;
+                    display();
+                    old_y = y;
+                }
+            }
+        }
     }
-    else if (middle_button_pressed && !s_mode){
+    else if (middle_button_pressed && !picking_mode){
         if (old_x - x > 0){         // move object left
             camera->translate(LEFT);
             display();
@@ -558,5 +643,6 @@ int main(int argc, char **argv) {
     glutMotionFunc(mouseMotion);
     glutMainLoop();
     return 0;
+    
     
 }
