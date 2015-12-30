@@ -40,11 +40,13 @@ public:
     BaseObj();
     GLfloat* getTranslationMatrix();
     GLfloat* getRotationMatrix();
+    GLfloat* getAutorotationMatrix();
     void setTranslationMatrix(GLfloat *other);
     void setRotationMatrix(GLfloat *other);
     void translateCenter(Vector3f center);
     void translate(int direction);
     void rotate(int axis, float by_degree, int kind);
+    void autorotate(int axis, float by_degree);
     void scale(int kind);
     void pick();
     void unPick();

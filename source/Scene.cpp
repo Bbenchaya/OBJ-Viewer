@@ -119,16 +119,10 @@ void drawObjects(GLenum mode){
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
         Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
         glLoadIdentity();
-        //        if (s_mode) {
-        //            glTranslatef(com.x, com.y, com.z);
-        //            glRotatef(10, 0, 1, 0);
-        //            glTranslatef(-com.x, -com.y, -com.z);
-        //        }
         glMultMatrixf(camera->getRotationMatrix());
         glMultMatrixf(camera->getTranslationMatrix());
         glMultMatrixf(shiftMinus100);
         glPushMatrix();
-        
         switch (mode) {
             case GL_SELECT:
                 glLoadName(shape_number);
@@ -151,21 +145,19 @@ void drawObjects(GLenum mode){
                     shape->rotate(rotation_direction, degree, rotation_mode);
                 }
                 else if (s_mode) {
-                    //                    glTranslatef(com.x, com.y, com.z);
-                    //                    shape->rotate(rotation_direction, degree, rotation_mode);
-                    //                    glMultMatrixf(shape->getRotationMatrix());
-                    //                    glTranslatef(-com.x, -com.y, -com.z);
-                    
+                    shape->autorotate(rotation_direction, degree);
                 }
-                //                if (!s_mode)
                 glMultMatrixf(shape->getRotationMatrix());
                 glMultMatrixf(shape->getTranslationMatrix());
-                //                if (s_mode) {
-                //                    glTranslatef(com.x, com.y, com.z);
-                //                    shape->rotate(rotation_direction, degree, rotation_mode);
-                //                    glMultMatrixf(shape->getRotationMatrix());
-                //                    glTranslatef(-com.x, -com.y, -com.z);
-                //                }
+                glPushMatrix();
+                glLoadIdentity();
+                glTranslatef(com.x, com.y, com.z);
+                glMultMatrixf(shape->getAutorotationMatrix());
+                glTranslatef(-com.x, -com.y, -com.z);
+                GLfloat temp[16];
+                glGetFloatv(GL_MODELVIEW_MATRIX, temp);
+                glPopMatrix();
+                glMultMatrixf(temp);
         }
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
