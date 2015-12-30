@@ -34,6 +34,7 @@ class BaseObj {
 private:
     GLfloat translation[16];
     GLfloat rotation[16];
+    GLfloat autorotation[16];
     bool is_picked;
 public:
     BaseObj();

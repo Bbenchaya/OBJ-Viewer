@@ -117,12 +117,18 @@ void drawObjects(GLenum mode){
     int shape_number = 0;
     glMatrixMode(GL_MODELVIEW);
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
+        Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
         glLoadIdentity();
+        //        if (s_mode) {
+        //            glTranslatef(com.x, com.y, com.z);
+        //            glRotatef(10, 0, 1, 0);
+        //            glTranslatef(-com.x, -com.y, -com.z);
+        //        }
         glMultMatrixf(camera->getRotationMatrix());
         glMultMatrixf(camera->getTranslationMatrix());
         glMultMatrixf(shiftMinus100);
         glPushMatrix();
-        Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
+        
         switch (mode) {
             case GL_SELECT:
                 glLoadName(shape_number);
@@ -154,13 +160,12 @@ void drawObjects(GLenum mode){
                 //                if (!s_mode)
                 glMultMatrixf(shape->getRotationMatrix());
                 glMultMatrixf(shape->getTranslationMatrix());
-                if (s_mode) {
-                    glTranslatef(com.x, com.y, com.z);
-                    shape->rotate(rotation_direction, degree, rotation_mode);
-                    glMultMatrixf(shape->getRotationMatrix());
-                    glTranslatef(-com.x, -com.y, -com.z);
-                }
-                
+                //                if (s_mode) {
+                //                    glTranslatef(com.x, com.y, com.z);
+                //                    shape->rotate(rotation_direction, degree, rotation_mode);
+                //                    glMultMatrixf(shape->getRotationMatrix());
+                //                    glTranslatef(-com.x, -com.y, -com.z);
+                //                }
         }
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);

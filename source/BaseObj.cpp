@@ -17,10 +17,12 @@ BaseObj::BaseObj(){
             if (i == j) {
                 translation[i * 4 +j] = 1;
                 rotation[i * 4 + j] = 1;
+                autorotation[i * 4 + j] = 1;
             }
             else {
                 translation[i * 4 +j] = 0;
                 rotation[i * 4 + j] = 0;
+                autorotation[i * 4 + j] = 0;
             }
         }
     }
@@ -47,7 +49,10 @@ void BaseObj::setRotationMatrix(GLfloat *other){
 }
 
 void BaseObj::translateCenter(Vector3f center){
-    GLfloat shiftCenter[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, center.x, center.y, center.z, 1};
+    GLfloat shiftCenter[16] = {1,       0,      0,      0,
+                               0,       1,      0,      0,
+                               0,       0,      1,      0,
+                                center.x, center.y, center.z, 1};
     glPushMatrix();
     glLoadMatrixf(getTranslationMatrix());
     glMultMatrixf(shiftCenter);
@@ -56,12 +61,36 @@ void BaseObj::translateCenter(Vector3f center){
 }
 
 void BaseObj::translate(int direction){
-    GLfloat matrix_up[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 5, 0, 1};
-    GLfloat matrix_down[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -5, 0, 1};
-    GLfloat matrix_left[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -5, 0, 0, 1};
-    GLfloat matrix_right[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 5, 0, 0, 1};
-    GLfloat matrix_zoom_out[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -5, 1};
-    GLfloat matrix_zoom_in[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 5, 1};
+    GLfloat matrix_up[16] = {1, 0, 0, 0,
+                             0, 1, 0, 0,
+                             0, 0, 1, 0,
+                             0, 5, 0, 1};
+    
+    GLfloat matrix_down[16] =  {1, 0, 0, 0,
+                                0, 1, 0, 0,
+                                0, 0, 1, 0,
+                                0, -5, 0, 1};
+    
+    GLfloat matrix_left[16] =  {1, 0, 0, 0,
+                                0, 1, 0, 0,
+                                0, 0, 1, 0,
+                                -5, 0, 0, 1};
+    
+    GLfloat matrix_right[16] = {1, 0, 0, 0,
+                                0, 1, 0, 0,
+                                0, 0, 1, 0,
+                                5, 0, 0, 1};
+    
+    GLfloat matrix_zoom_out[16] =  {1, 0, 0, 0,
+                                    0, 1, 0, 0,
+                                    0, 0, 1, 0,
+                                    0, 0, -5, 1};
+    
+    GLfloat matrix_zoom_in[16]   = {1, 0, 0, 0,
+                                    0, 1, 0, 0,
+                                    0, 0, 1, 0,
+                                    0, 0, 5, 1};
+    
     switch (direction) {
         case UP:
             glPushMatrix();
@@ -129,22 +158,25 @@ void BaseObj::rotate(int axis, float by_degree, int kind){
                                  -sinf(-by_degree),     0,                          cosf(-by_degree),  0,
                                  0,                     0,                           0,                1};
     
-    GLfloat scene_X_to_Z[16] = {cosf(by_degree), 0, -sinf(by_degree), 0,
-        0, 1, 0, 0,
-        sinf(by_degree), 0, cosf(by_degree), 0,
-        0, 0, 0, 1};
-    GLfloat scene_Z_to_X[16] = {cosf(-by_degree), 0, -sinf(-by_degree), 0,
-        0, 1, 0, 0,
-        sinf(-by_degree), 0, cosf(-by_degree), 0,
-        0, 0, 0, 1};
-    GLfloat scene_Y_to_Z[16] = {1, 0, 0, 0,
-        0, cosf(by_degree), sinf(by_degree), 0,
-        0, -sinf(by_degree), cosf(by_degree), 0,
-        0, 0, 0, 1};
-    GLfloat scene_Z_to_Y[16] = {1, 0, 0, 0,
-        0, cosf(-by_degree), sinf(-by_degree), 0,
-        0, -sinf(-by_degree), cosf(-by_degree), 0,
-        0, 0, 0, 1};
+    GLfloat scene_X_to_Z[16] = {cosf(by_degree),        0,      -sinf(by_degree),       0,
+                                0,                      1,      0,                      0,
+                                sinf(by_degree),        0,      cosf(by_degree),        0,
+                                0,                      0,      0,                      1};
+    
+    GLfloat scene_Z_to_X[16] = {cosf(-by_degree),       0,      -sinf(-by_degree),      0,
+                                0,                      1,      0,                      0,
+                                sinf(-by_degree),       0,      cosf(-by_degree),       0,
+                                0,                      0,      0,                      1};
+    
+    GLfloat scene_Y_to_Z[16] = {1,          0,                      0,                      0,
+                                0,          cosf(by_degree),        sinf(by_degree),        0,
+                                0,          -sinf(by_degree),       cosf(by_degree),        0,
+                                0,          0,                      0,                      1};
+    
+    GLfloat scene_Z_to_Y[16] = {1,      0,                      0,                      0,
+                                0,      cosf(-by_degree),       sinf(-by_degree),       0,
+                                0,      -sinf(-by_degree),      cosf(-by_degree),       0,
+                                0,      0,                      0,                      1};
     
     switch (kind) {
         case OBJECT_ROTATION:
@@ -256,10 +288,12 @@ void BaseObj::reset() {
             if (i == j) {
                 translation[i * 4 +j] = 1;
                 rotation[i * 4 + j] = 1;
+                autorotation[i * 4 + j] = 1;
             }
             else {
                 translation[i * 4 +j] = 0;
                 rotation[i * 4 + j] = 0;
+                autorotation[i * 4 + j] = 0;
             }
         }
     }
