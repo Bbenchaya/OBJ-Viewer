@@ -58,6 +58,7 @@
 		594FB6271C31223A003F1B1E /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
 		594FB6291C31223F003F1B1E /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		594FB62B1C312248003F1B1E /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		F07B93801C342AC600F0973A /* simplesimple.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = simplesimple.obj; path = resource/simplesimple.obj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,6 +119,7 @@
 				594FB6131C3121E8003F1B1E /* doll.obj.txt */,
 				594FB6141C3121E8003F1B1E /* simple.obj */,
 				594FB6151C3121E8003F1B1E /* simple.obj.txt */,
+				F07B93801C342AC600F0973A /* simplesimple.obj */,
 				594FB6161C3121E8003F1B1E /* skeleton.obj */,
 				594FB6171C3121E8003F1B1E /* skeleton.obj.txt */,
 			);
