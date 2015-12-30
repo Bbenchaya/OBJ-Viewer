@@ -139,18 +139,12 @@ void drawObjects(GLenum mode){
                             shape->translate(picking_translation_mode);
                         }
                     }
-                    glMultMatrixf(shape->getTranslationMatrix());
-                    glMultMatrixf(shape->getRotationMatrix());
-                }
-                else if(camera_mode) {
-                    glMultMatrixf(shape->getTranslationMatrix());
-                    glMultMatrixf(shape->getRotationMatrix());
                 }
                 else if (global_mode || s_mode){
                     shape->rotate(rotation_direction, degree, rotation_mode);
-                    glMultMatrixf(shape->getTranslationMatrix());
-                    glMultMatrixf(shape->getRotationMatrix());
                 }
+                glMultMatrixf(shape->getTranslationMatrix());
+                glMultMatrixf(shape->getRotationMatrix());
         }
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
@@ -168,17 +162,13 @@ void drawObjects(GLenum mode){
                 }
         }
     }
-    if (global_mode) {
-        accumulate_for_axes.rotate(rotation_direction, degree, rotation_mode);
-        accumulate_for_axes.translate(picking_translation_mode);
-    }
-//    drawAxes();
+
     glPopMatrix();
     if (mode == GL_RENDER) {
-//        glLoadIdentity();
-//        glMultMatrixf(camera->getRotationMatrix());
-//        glMultMatrixf(camera->getTranslationMatrix());
-//        glMultMatrixf(shiftMinus100);
+        if (global_mode) {
+            accumulate_for_axes.rotate(rotation_direction, degree, rotation_mode);
+            accumulate_for_axes.translate(picking_translation_mode);
+        }
         glMultMatrixf(accumulate_for_axes.getTranslationMatrix());
         glMultMatrixf(accumulate_for_axes.getRotationMatrix());
         drawAxes();
@@ -373,7 +363,8 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             if (picking_mode && !erase_mode) {
                 erase_mode = true;
                 camera_mode = global_mode = s_mode = false;
-                cout << "Entered erase mode" << endl;
+                rotate_obj = translate_obj = scale_obj = false;
+                cout << "Picking mode: erase sub-mode" << endl;
             }
             break;
         case '4':
@@ -485,61 +476,63 @@ void mouseMotion(int x, int y){
                     }
                 }
             }
-            glPushMatrix();
-            Vector3f center = objectCenterOfMass();
-            GLfloat shiftCenter[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, center.x, center.y, center.z, 1};
-            GLfloat shiftBack[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -center.x, -center.y, -center.z, 1};
-            if (s_mode) {
+            if (!translate_obj) {
                 glPushMatrix();
-                glLoadMatrixf(camera->getTranslationMatrix());
-                glMultMatrixf(shiftCenter);
-                glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
+                Vector3f center = objectCenterOfMass();
+                GLfloat shiftCenter[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, center.x, center.y, center.z, 1};
+                GLfloat shiftBack[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -center.x, -center.y, -center.z, 1};
+                if (s_mode) {
+                    glPushMatrix();
+                    glLoadMatrixf(camera->getTranslationMatrix());
+                    glMultMatrixf(shiftCenter);
+                    glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
+                    glPopMatrix();
+                }
+                if (old_x - x > 0){         // rotate the scene from x axis to z axis
+                    //                camera->rotate(X_TO_Z, 0.1, OBJECT_ROTATION);
+                    rotation_direction = X_TO_Z;
+                    rotation_mode = OBJECT_ROTATION;
+                    degree = 0.1;
+                    display();
+                    degree = 0.0;
+                    old_x = x;
+                }
+                else {                      // rotate the scene from x axis to -z axis
+                    //                camera->rotate(Z_TO_X, 0.1, OBJECT_ROTATION);
+                    rotation_direction = Z_TO_X;
+                    rotation_mode = OBJECT_ROTATION;
+                    degree = 0.1;
+                    display();
+                    degree = 0.0;
+                    old_x = x;
+                }
+                if (old_y - y > 0){         // rotate the scene from z axis to y axis
+                    //                camera->rotate(Z_TO_Y, 0.1, OBJECT_ROTATION);
+                    rotation_direction = Y_TO_Z;
+                    rotation_mode = OBJECT_ROTATION;
+                    degree = 0.1;
+                    display();
+                    degree = 0.0;
+                    old_y = y;
+                }
+                else {                      // rotate the scene from z axis to -y axis
+                    //                camera->rotate(Y_TO_Z, 0.1, OBJECT_ROTATION);
+                    rotation_direction = Z_TO_Y;
+                    rotation_mode = OBJECT_ROTATION;
+                    degree = 0.1;
+                    display();
+                    degree = 0.0;
+                    old_y = y;
+                }
+                if (s_mode) {
+                    glPushMatrix();
+                    glLoadMatrixf(camera->getTranslationMatrix());
+                    glMultMatrixf(shiftBack);
+                    glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
+                    glPopMatrix();
+                }
                 glPopMatrix();
             }
-            if (old_x - x > 0){         // rotate the scene from x axis to z axis
-                //                camera->rotate(X_TO_Z, 0.1, OBJECT_ROTATION);
-                rotation_direction = X_TO_Z;
-                rotation_mode = OBJECT_ROTATION;
-                degree = 0.1;
-                display();
-                degree = 0.0;
-                old_x = x;
-            }
-            else {                      // rotate the scene from x axis to -z axis
-                //                camera->rotate(Z_TO_X, 0.1, OBJECT_ROTATION);
-                rotation_direction = Z_TO_X;
-                rotation_mode = OBJECT_ROTATION;
-                degree = 0.1;
-                display();
-                degree = 0.0;
-                old_x = x;
-            }
-            if (old_y - y > 0){         // rotate the scene from z axis to y axis
-                //                camera->rotate(Z_TO_Y, 0.1, OBJECT_ROTATION);
-                rotation_direction = Y_TO_Z;
-                rotation_mode = OBJECT_ROTATION;
-                degree = 0.1;
-                display();
-                degree = 0.0;
-                old_y = y;
-            }
-            else {                      // rotate the scene from z axis to -y axis
-                //                camera->rotate(Y_TO_Z, 0.1, OBJECT_ROTATION);
-                rotation_direction = Z_TO_Y;
-                rotation_mode = OBJECT_ROTATION;
-                degree = 0.1;
-                display();
-                degree = 0.0;
-                old_y = y;
-            }
-            if (s_mode) {
-                glPushMatrix();
-                glLoadMatrixf(camera->getTranslationMatrix());
-                glMultMatrixf(shiftBack);
-                glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
-                glPopMatrix();
-            }
-            glPopMatrix();
         }
     }
     else if (middle_button_pressed && !picking_mode){
