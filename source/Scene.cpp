@@ -23,6 +23,9 @@ bool s_mode;
 bool global_mode;
 bool picking_mode;
 bool erase_mode;
+bool rotate_obj;
+bool translate_obj;
+bool scale_obj;
 bool axes;
 int old_x;
 int old_y;
@@ -68,11 +71,11 @@ void drawAxes(){
     glLineWidth(1.5);
     
     glBegin(GL_LINES);
-    glMaterialfv(GL_FRONT, GL_EMISSION, Vector3f(1,0,0));
+    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
     glVertex3fv(Vector3f(50,0,0));  glVertex3fv(Vector3f(-50,0,0));
-    glMaterialfv(GL_FRONT, GL_EMISSION, Vector3f(0,1,0));
+    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0,1,0));
     glVertex3fv(Vector3f(0,50,0));  glVertex3fv(Vector3f(0,-50,0));
-    glMaterialfv(GL_FRONT, GL_EMISSION, Vector3f(0,0,1));
+    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0,0,1));
     glVertex3fv(Vector3f(0,0,50));  glVertex3fv(Vector3f(0,0,-50));
     glEnd();
     
@@ -113,8 +116,8 @@ void drawObjects(GLenum mode){
     
     //    glAlphaFunc(GL_LESS, 0.5);
     int shape_number = 0;
-    drawAxes();
     glMatrixMode(GL_MODELVIEW);
+    
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
         if (picking_mode) {
             glLoadName(shape_number);
@@ -138,12 +141,17 @@ void drawObjects(GLenum mode){
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
         }
-        if (picking_mode) {
-            //            Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
-            //            glTranslatef(-com.x, -com.y, -com.z);
-            glutSolidSphere(5, 50, 50);
-            //            glTranslatef(com.x, com.y, com.z);
+        
+        if (picking_mode && shape->isPicked()) {
+            glDisable(GL_DEPTH_TEST);
+            Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
+            glTranslatef(com.x, com.y, com.z);
+            glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
+            glutSolidSphere(1, 50, 50);
+            glTranslatef(-com.x, -com.y, -com.z);
+            glEnable(GL_DEPTH_TEST);
         }
+        drawAxes();
     }
     printModelviewMatrix();
     printProjectionMatrix();
@@ -311,10 +319,19 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             global_mode = s_mode = picking_mode = erase_mode = false;
             break;
         case 'r':
+            if (picking_mode) {
+                rotate_obj = true;
+            }
             break;
         case 't':
+            if (picking_mode) {
+                translate_obj = true;
+            }
             break;
         case 'l':
+            if (picking_mode) {
+                scale_obj = true;
+            }
             break;
         case 'e':
             if (picking_mode && !erase_mode) {
@@ -330,6 +347,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
                 glGetFloatv(GL_MODELVIEW_MATRIX, shape->getTranslationMatrix());
                 glGetFloatv(GL_MODELVIEW_MATRIX, shape->getRotationMatrix());
             }
+            unpickAllObjects();
             glGetFloatv(GL_MODELVIEW_MATRIX, camera->getTranslationMatrix());
             glGetFloatv(GL_MODELVIEW_MATRIX, camera->getRotationMatrix());
             global_mode = true;
