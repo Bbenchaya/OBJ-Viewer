@@ -249,3 +249,18 @@ void BaseObj::unPick(){
 bool BaseObj::isPicked(){
     return is_picked;
 }
+
+void BaseObj::reset() {
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (i == j) {
+                translation[i * 4 +j] = 1;
+                rotation[i * 4 + j] = 1;
+            }
+            else {
+                translation[i * 4 +j] = 0;
+                rotation[i * 4 + j] = 0;
+            }
+        }
+    }
+}

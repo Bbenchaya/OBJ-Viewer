@@ -27,6 +27,7 @@
 #define ENLARGE 2
 #define SCENE_ROTATION 1
 #define OBJECT_ROTATION 2
+#define NEUTRAL_VALUE 0
 
 class BaseObj {
     
@@ -47,6 +48,7 @@ public:
     void pick();
     void unPick();
     bool isPicked();
+    void reset();
 };
 
 #endif /* BaseObj_hpp */
