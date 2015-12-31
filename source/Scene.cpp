@@ -154,6 +154,7 @@ void drawObjects(GLenum mode){
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
         }
+        // in picking mode, for each picked object, draw a tiny red sphere in its center of mass
         if (mode == GL_RENDER && picking_mode && shape->isPicked()) {
             glDisable(GL_DEPTH_TEST);
             Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
@@ -163,8 +164,9 @@ void drawObjects(GLenum mode){
             glTranslatef(-com.x, -com.y, -com.z);
             glEnable(GL_DEPTH_TEST);
         }
+        glPopMatrix();
     }
-    glPopMatrix();
+    // draw the axes once
     if (mode == GL_RENDER) {
         if (global_mode) {
             accumulate_for_axes.rotate(rotation_direction, degree, rotation_mode);
@@ -397,7 +399,7 @@ void mouseClick(int button, int state, int x, int y){
             old_x = WINDOW_WIDTH / 2;
             old_y = WINDOW_HEIGHT / 2;
             if (picking_mode) {
-                
+                // TODO end picking of objects
             }
             break;
         case GLUT_MIDDLE_BUTTON:
