@@ -315,6 +315,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             }
             s_mode = true;
             camera_mode = global_mode = picking_mode = false;
+            picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
             display();
             break;
         case 'g':
@@ -327,6 +328,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             }
             global_mode = true;
             camera_mode = s_mode = picking_mode = false;
+            picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
             display();
             break;
         case 'c':
@@ -339,6 +341,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             }
             camera_mode = true;
             global_mode = s_mode = picking_mode = false;
+            picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
             display();
             break;
         case 'r':
@@ -367,6 +370,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
                 erase_obj = true;
                 camera_mode = global_mode = s_mode = false;
                 rotate_obj = translate_obj = scale_obj = false;
+                picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
                 cout << "Picking mode: erase sub-mode" << endl;
             }
             break;
