@@ -28,7 +28,7 @@ bool erase_obj;
 bool rotate_obj;
 bool translate_obj;
 bool scale_obj;
-bool axes;
+bool currently_picking;
 int old_x;
 int old_y;
 int rotation_direction;
@@ -176,8 +176,8 @@ void drawObjects(GLenum mode){
         glMultMatrixf(accumulate_for_axes.getRotationMatrix());
         drawAxes();
     }
-    printModelviewMatrix();
-    printProjectionMatrix();
+//    printModelviewMatrix();
+//    printProjectionMatrix();
 }
 
 void display() {
@@ -225,10 +225,9 @@ void init(){
     rotate_obj = false;
     translate_obj = false;
     scale_obj = false;
+    currently_picking = false;
     old_x = WINDOW_WIDTH / 2;
     old_y = WINDOW_HEIGHT / 2;
-    printModelviewMatrix();
-    printProjectionMatrix();
     initLight();
 }
 
@@ -277,12 +276,10 @@ void pick_objects(int x, int y){
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     hits = glRenderMode(GL_RENDER);
-    //    list_hits(hits, buff);
     processPicks(hits, buff);
     if (erase_obj) {
         erasePickedObjects();
     }
-//    glMatrixMode(GL_MODELVIEW);
     display();
 }
 
@@ -314,7 +311,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
                 lightenObjects();
             }
             s_mode = true;
-            camera_mode = global_mode = picking_mode = false;
+            camera_mode = global_mode = picking_mode = currently_picking = false;
             picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
             display();
             break;
@@ -327,7 +324,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
                 cout << "Entered global mode" << endl;
             }
             global_mode = true;
-            camera_mode = s_mode = picking_mode = false;
+            camera_mode = s_mode = picking_mode = currently_picking = false;
             picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
             display();
             break;
@@ -340,35 +337,35 @@ void readKey(unsigned char key, int xmouse, int ymouse){
                 cout << "Entered camera mode" << endl;
             }
             camera_mode = true;
-            global_mode = s_mode = picking_mode = false;
+            global_mode = s_mode = picking_mode = currently_picking = false;
             picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
             display();
             break;
         case 'r':
-            if (picking_mode && !rotate_obj) {
+            if (picking_mode && !rotate_obj && !currently_picking) {
                 rotate_obj = true;
                 translate_obj = scale_obj = false;
                 cout << "Picking mode: rotation sub-mode" << endl;
             }
             break;
         case 't':
-            if (picking_mode && !translate_obj) {
+            if (picking_mode && !translate_obj && !currently_picking) {
                 translate_obj = true;
                 rotate_obj = scale_obj = false;
                 cout << "Picking mode: translation sub-mode" << endl;
             }
             break;
         case 'l':
-            if (picking_mode && !scale_obj) {
+            if (picking_mode && !scale_obj && !currently_picking) {
                 scale_obj = true;
                 rotate_obj = translate_obj = false;
                 cout << "Picking mode: scaling sub-mode" << endl;
             }
             break;
         case 'e':
-            if (picking_mode && !erase_obj) {
+            if (picking_mode && !erase_obj && !currently_picking) {
                 erase_obj = true;
-                camera_mode = global_mode = s_mode = false;
+                camera_mode = global_mode = s_mode = currently_picking = false;
                 rotate_obj = translate_obj = scale_obj = false;
                 picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
                 cout << "Picking mode: erase sub-mode" << endl;
@@ -387,7 +384,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             camera.reset();
             accumulate_for_axes.reset();
             global_mode = true;
-            camera_mode = s_mode = picking_mode = false;
+            camera_mode = s_mode = picking_mode = currently_picking = false;
             picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
             display();
             break;
@@ -402,19 +399,20 @@ void mouseClick(int button, int state, int x, int y){
             left_button_pressed = !left_button_pressed;
             old_x = WINDOW_WIDTH / 2;
             old_y = WINDOW_HEIGHT / 2;
-            if (picking_mode) {
-                // TODO end picking of objects
+            if (left_button_pressed && picking_mode && currently_picking) {
+                currently_picking = false;
+                cout << "Picking objects has ended" << endl;
+                pick_objects(x, WINDOW_HEIGHT - y);
             }
             break;
         case GLUT_MIDDLE_BUTTON:
             middle_button_pressed = !middle_button_pressed;
             break;
         case GLUT_RIGHT_BUTTON:
-            if (!right_button_pressed && picking_mode) {
+            if (!right_button_pressed && picking_mode && currently_picking) {
                 pick_objects(x, WINDOW_HEIGHT - y);
             }
             if (!right_button_pressed && !picking_mode) {
-                //                picking_mode = true;
                 if (s_mode) {
                     darkenObjects();
                 }
@@ -423,7 +421,7 @@ void mouseClick(int button, int state, int x, int y){
                 pick_objects(x, WINDOW_HEIGHT - y);
             }
             if (right_button_pressed && !picking_mode) {
-                picking_mode = true;
+                picking_mode = currently_picking = true;
             }
             right_button_pressed = !right_button_pressed;
     }
