@@ -153,6 +153,12 @@ void drawObjects(GLenum mode){
         glMultMatrixf(temp);
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
+            if (picking_mode && translate_obj) {
+                glAccum(GL_ACCUM, 0.01);
+            }
+        }
+        if (picking_mode && translate_obj) {
+            glAccum(GL_RETURN, 1.0);
         }
         // in picking mode, for each picked object, draw a tiny red sphere in its center of mass
         if (mode == GL_RENDER && picking_mode && shape->isPicked()) {
@@ -176,8 +182,8 @@ void drawObjects(GLenum mode){
         glMultMatrixf(accumulate_for_axes.getRotationMatrix());
         drawAxes();
     }
-//    printModelviewMatrix();
-//    printProjectionMatrix();
+    printModelviewMatrix();
+    printProjectionMatrix();
 }
 
 void display() {
@@ -202,7 +208,7 @@ void initLight(){
 }
 
 void init(){
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_ACCUM_BUFFER_BIT);
     glClearColor(0, 0, 0, 1);
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glMatrixMode(GL_PROJECTION);
@@ -302,6 +308,10 @@ void darkenObjects(){
     }
 }
 
+void resetGlobalVariables() {
+    picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
+}
+
 void readKey(unsigned char key, int xmouse, int ymouse){
     switch (key){
         case 's':
@@ -312,7 +322,8 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             }
             s_mode = true;
             camera_mode = global_mode = picking_mode = currently_picking = false;
-            picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
+            resetGlobalVariables();
+            glClear(GL_ACCUM_BUFFER_BIT);
             display();
             break;
         case 'g':
@@ -325,7 +336,8 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             }
             global_mode = true;
             camera_mode = s_mode = picking_mode = currently_picking = false;
-            picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
+            resetGlobalVariables();
+            glClear(GL_ACCUM_BUFFER_BIT);
             display();
             break;
         case 'c':
@@ -338,13 +350,16 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             }
             camera_mode = true;
             global_mode = s_mode = picking_mode = currently_picking = false;
-            picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
+            resetGlobalVariables();
+            glClear(GL_ACCUM_BUFFER_BIT);
             display();
             break;
         case 'r':
             if (picking_mode && !rotate_obj && !currently_picking) {
                 rotate_obj = true;
                 translate_obj = scale_obj = false;
+                resetGlobalVariables();
+                glClear(GL_ACCUM_BUFFER_BIT);
                 cout << "Picking mode: rotation sub-mode" << endl;
             }
             break;
@@ -352,6 +367,8 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             if (picking_mode && !translate_obj && !currently_picking) {
                 translate_obj = true;
                 rotate_obj = scale_obj = false;
+                resetGlobalVariables();
+                glClear(GL_ACCUM_BUFFER_BIT);
                 cout << "Picking mode: translation sub-mode" << endl;
             }
             break;
@@ -359,15 +376,17 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             if (picking_mode && !scale_obj && !currently_picking) {
                 scale_obj = true;
                 rotate_obj = translate_obj = false;
+                resetGlobalVariables();
+                glClear(GL_ACCUM_BUFFER_BIT);
                 cout << "Picking mode: scaling sub-mode" << endl;
             }
             break;
         case 'e':
             if (picking_mode && !erase_obj && !currently_picking) {
                 erase_obj = true;
-                camera_mode = global_mode = s_mode = currently_picking = false;
                 rotate_obj = translate_obj = scale_obj = false;
-                picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
+                resetGlobalVariables();
+                glClear(GL_ACCUM_BUFFER_BIT);
                 cout << "Picking mode: erase sub-mode" << endl;
             }
             break;
@@ -386,6 +405,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             global_mode = true;
             camera_mode = s_mode = picking_mode = currently_picking = false;
             picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
+            glClear(GL_ACCUM_BUFFER_BIT);
             display();
             break;
         case ESC:
@@ -573,7 +593,7 @@ int main(int argc, char **argv) {
     Parser parser;
     parser.parse(colors, shapes, vertexTable, normalTable);
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ACCUM);
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     glutCreateWindow("3D object rendering");
     init();
