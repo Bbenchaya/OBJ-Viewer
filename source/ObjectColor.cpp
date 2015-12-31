@@ -70,5 +70,5 @@ void ObjectColor::darken(){
 }
 
 void ObjectColor::erase(){
-    alpha *= 0;
+    alpha = Vector3f(0, 0, 0);
 }

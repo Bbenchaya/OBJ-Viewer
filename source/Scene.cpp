@@ -69,12 +69,12 @@ void printProjectionMatrix(){
 void drawAxes(){
     glLineWidth(1.5);
     glBegin(GL_LINES);
-    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
-    glVertex3fv(Vector3f(50,0,0));  glVertex3fv(Vector3f(0,0,0));
-    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0,1,0));
-    glVertex3fv(Vector3f(0,50,0));  glVertex3fv(Vector3f(0,0,0));
-    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0,0,1));
-    glVertex3fv(Vector3f(0,0,50));  glVertex3fv(Vector3f(0,0,0));
+    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1, 0, 0));
+    glVertex3fv(Vector3f(50, 0, 0));  glVertex3fv(Vector3f(0, 0, 0));
+    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0, 1, 0));
+    glVertex3fv(Vector3f(0, 50, 0));  glVertex3fv(Vector3f(0, 0, 0));
+    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0, 0, 1));
+    glVertex3fv(Vector3f(0, 0, 50));  glVertex3fv(Vector3f(0, 0, 0));
     glEnd();
 }
 
@@ -182,8 +182,8 @@ void drawObjects(GLenum mode){
         glMultMatrixf(accumulate_for_axes.getRotationMatrix());
         drawAxes();
     }
-    printModelviewMatrix();
-    printProjectionMatrix();
+//    printModelviewMatrix();
+//    printProjectionMatrix();
 }
 
 void display() {
@@ -204,7 +204,7 @@ void initLight(){
     glShadeModel(GL_SMOOTH);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
-    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE);
+    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 }
 
 void init(){
@@ -214,9 +214,11 @@ void init(){
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(FOV, 1, Z_NEAR, Z_FAR);
-    glEnable(GL_DEPTH_TEST);
-    //    glEnable(GL_ALPHA_TEST);
+    glEnable(GL_ALPHA_TEST | GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+//    glAlphaFunc(GL_GREATER, 0);
+//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//    glEnable(GL_BLEND);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     degree = 0;
@@ -258,12 +260,6 @@ void processPicks(GLint hits, GLuint *names) {
         shapes.at((GLubyte)names[i * 4 + 3]).pick();
 }
 
-void erasePickedObjects() {
-    for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
-        shape->unPick();
-    }
-}
-
 void pick_objects(int x, int y){
     GLuint buff[shapes.size()];
     GLint hits, view[4];
@@ -283,9 +279,6 @@ void pick_objects(int x, int y){
     glPopMatrix();
     hits = glRenderMode(GL_RENDER);
     processPicks(hits, buff);
-    if (erase_obj) {
-        erasePickedObjects();
-    }
     display();
 }
 
@@ -388,6 +381,12 @@ void readKey(unsigned char key, int xmouse, int ymouse){
                 resetGlobalVariables();
                 glClear(GL_ACCUM_BUFFER_BIT);
                 cout << "Picking mode: erase sub-mode" << endl;
+                for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+                    if (shape->isPicked()) {
+                        shape->erase();
+                    }
+                }
+                display();
             }
             break;
         case '4':
