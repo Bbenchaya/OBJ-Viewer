@@ -21,7 +21,7 @@ private:
     Vector3f ambient;
     Vector3f diffuse;
     Vector3f specular;
-    Vector3f alpha;
+    float alpha;
     
 public:
     ObjectColor(int name,
@@ -34,7 +34,7 @@ public:
     Vector3f getAmbient();
     Vector3f getDiffused();
     Vector3f getSpecular();
-    Vector3f getAlpha();
+    float getAlpha();
     void lighten();
     void darken();
     void erase();

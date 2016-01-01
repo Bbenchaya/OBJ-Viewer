@@ -96,7 +96,7 @@ void drawPolygon(ObjectColor color, Face &face){
     glMaterialfv(GL_FRONT, GL_AMBIENT, color.getAmbient());
     glMaterialfv(GL_FRONT, GL_DIFFUSE, color.getDiffused());
     glMaterialfv(GL_FRONT, GL_SPECULAR, color.getSpecular());
-    glMaterialfv(GL_FRONT, GL_ALPHA, color.getAlpha());
+    glColor4f(1, 1, 1, color.getAlpha());
     glBegin(GL_POLYGON);
     for (int i = 0; i < face.numOfVertices(); i++) {
         Vector3f normal = face.getPair(i).second;
@@ -105,6 +105,7 @@ void drawPolygon(ObjectColor color, Face &face){
         glVertex3f(vertex.x, vertex.y, vertex.z);
     }
     glEnd();
+    
 }
 
 void drawObjects(GLenum mode){
@@ -154,7 +155,8 @@ void drawObjects(GLenum mode){
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
             if (picking_mode && translate_obj) {
-                glAccum(GL_ACCUM, 0.01);
+                glAccum(GL_MULT, 0.98);
+                glAccum(GL_ACCUM, 0.02);
             }
         }
         if (picking_mode && translate_obj) {
@@ -182,8 +184,8 @@ void drawObjects(GLenum mode){
         glMultMatrixf(accumulate_for_axes.getRotationMatrix());
         drawAxes();
     }
-//    printModelviewMatrix();
-//    printProjectionMatrix();
+    //    printModelviewMatrix();
+    //    printProjectionMatrix();
 }
 
 void display() {
@@ -209,14 +211,16 @@ void initLight(){
 
 void init(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_ACCUM_BUFFER_BIT);
+    glClearAccum(0.0, 0.0, 0.0, 1.0);
     glClearColor(0, 0, 0, 1);
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(FOV, 1, Z_NEAR, Z_FAR);
-    glEnable(GL_ALPHA_TEST | GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-//    glAlphaFunc(GL_GREATER, 0);
+//    glAlphaFunc(GL_LESS, 0.1);
+//    glEnable(GL_ALPHA_TEST);
 //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 //    glEnable(GL_BLEND);
     glMatrixMode(GL_MODELVIEW);

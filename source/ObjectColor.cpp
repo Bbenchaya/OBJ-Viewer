@@ -11,11 +11,12 @@
 ObjectColor::ObjectColor(int name,
                          Vector3f ambient,
                          Vector3f diffuse,
-                         Vector3f specular) : alpha(1, 1, 1){
+                         Vector3f specular) {
     this->name = name;
     this->ambient = ambient;
     this->diffuse = diffuse;
     this->specular = specular;
+    this->alpha = 1.0;
 }
 
 ObjectColor::ObjectColor(const ObjectColor &other) : alpha(other.alpha){
@@ -53,7 +54,7 @@ Vector3f ObjectColor::getSpecular(){
     return this->specular;
 }
 
-Vector3f ObjectColor::getAlpha(){
+float ObjectColor::getAlpha(){
     return alpha;
 }
 
@@ -70,5 +71,5 @@ void ObjectColor::darken(){
 }
 
 void ObjectColor::erase(){
-    alpha = Vector3f(0, 0, 0);
+    alpha = 0.0;
 }
