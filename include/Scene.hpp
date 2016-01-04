@@ -10,6 +10,7 @@
 #define Scene_hpp
 
 #include <fstream>
+#include <climits>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

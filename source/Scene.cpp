@@ -69,11 +69,14 @@ void printProjectionMatrix(){
 void drawAxes(){
     glLineWidth(1.5);
     glBegin(GL_LINES);
-    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1, 0, 0));
+    float red[4] = {1, 0, 0, 1};
+    float green[4] = {0, 1, 0, 1};
+    float blue[4] = {0, 0, 1, 1};
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
     glVertex3fv(Vector3f(50, 0, 0));  glVertex3fv(Vector3f(0, 0, 0));
-    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0, 1, 0));
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, green);
     glVertex3fv(Vector3f(0, 50, 0));  glVertex3fv(Vector3f(0, 0, 0));
-    glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(0, 0, 1));
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, blue);
     glVertex3fv(Vector3f(0, 0, 50));  glVertex3fv(Vector3f(0, 0, 0));
     glEnd();
 }
@@ -153,7 +156,7 @@ void drawObjects(GLenum mode){
         glMultMatrixf(temp);
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
-
+            
         }
         if (picking_mode && translate_obj) {
             glAccum(GL_MULT, 0.98);
@@ -167,7 +170,8 @@ void drawObjects(GLenum mode){
             glDisable(GL_DEPTH_TEST);
             Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
             glTranslatef(com.x, com.y, com.z);
-            glMaterialfv(GL_FRONT, GL_AMBIENT, Vector3f(1,0,0));
+            float red[4] = {1, 0, 0, 1};
+            glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
             glutSolidSphere(0.3, 50, 50);
             glTranslatef(-com.x, -com.y, -com.z);
             glEnable(GL_DEPTH_TEST);
@@ -195,11 +199,9 @@ void display() {
 }
 
 void initLight(){
-    //    GLfloat light_direction[] = {0, 0, 1};
     GLfloat light_ambient[] = {0.5, 0.5, 0.5};
     GLfloat light_diffuse[] = {0, 0.5, 0.5};
     GLfloat light_specular[] = {0, 0.0, 0.5};
-    //    GLfloat angle[] = {5.0};
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
@@ -219,12 +221,8 @@ void init(){
     gluPerspective(FOV, 1, Z_NEAR, Z_FAR);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    glAlphaFunc(GL_GREATER, 0.1);
     glEnable(GL_ALPHA_TEST);
-//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//    glEnable(GL_BLEND);
-//    glEnable(GL_COLOR_MATERIAL);
-//    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT);
+    glAlphaFunc(GL_GREATER, 0.1);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     degree = 0;
@@ -262,8 +260,17 @@ void list_hits(GLint hits, GLuint *names) {
 }
 
 void processPicks(GLint hits, GLuint *names) {
-    for (int i = 0; i < hits; i++)
-        shapes.at((GLubyte)names[i * 4 + 3]).pick();
+    int name_of_min = INT32_MAX;
+    int min = INT32_MAX;
+    for (int i = 0; i < hits; i++){
+        if ((GLubyte)names[i * 4 + 1] < min) {
+            min = (GLubyte)names[i * 4 + 1];
+            name_of_min = (GLubyte)names[i * 4 + 3];
+        }
+    }
+    if (min < INFINITY) {
+        shapes.at(name_of_min).pick();
+    }
 }
 
 void pick_objects(int x, int y){
@@ -284,6 +291,7 @@ void pick_objects(int x, int y){
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     hits = glRenderMode(GL_RENDER);
+    list_hits(hits, buff);
     processPicks(hits, buff);
     display();
 }
