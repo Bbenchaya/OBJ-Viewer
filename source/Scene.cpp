@@ -81,20 +81,6 @@ void drawAxes(){
     glEnd();
 }
 
-Vector3f objectCenterOfMass(){
-    Vector3f sum(0, 0, 0);
-    int numOfVertices = 0;
-    for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
-        sum += shape->getSumOfVertices();
-        numOfVertices += shape->getNumOfVertices();
-    }
-    if (numOfVertices == 0) {
-        cout << "Bad file: no vertices" << endl;
-        exit(1);
-    }
-    return sum / numOfVertices;
-}
-
 void drawPolygon(ObjectColor color, Face &face){
     glMaterialfv(GL_FRONT, GL_AMBIENT, color.getAmbient());
     glMaterialfv(GL_FRONT, GL_DIFFUSE, color.getDiffused());
@@ -156,13 +142,10 @@ void drawObjects(GLenum mode){
         glMultMatrixf(temp);
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
-            
         }
         if (picking_mode && translate_obj) {
-            glAccum(GL_MULT, 0.98);
-            glAccum(GL_ACCUM, 0.02);
-        }
-        if (picking_mode && translate_obj) {
+            glAccum(GL_MULT, 0.9);
+            glAccum(GL_ACCUM, 0.1);
             glAccum(GL_RETURN, 1.0);
         }
         // in picking mode, for each picked object, draw a tiny red sphere in its center of mass
@@ -268,7 +251,7 @@ void processPicks(GLint hits, GLuint *names) {
             name_of_min = (GLubyte)names[i * 4 + 3];
         }
     }
-    if (min < INFINITY) {
+    if (min < INT32_MAX) {
         shapes.at(name_of_min).pick();
     }
 }
