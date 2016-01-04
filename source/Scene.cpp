@@ -35,6 +35,7 @@ int rotation_direction;
 int rotation_mode;
 int picking_scale_mode;
 int picking_translation_mode;
+int last_picked_object;
 float degree;
 unordered_map<int, Vector3f> vertexTable;
 unordered_map<int, Vector3f> normalTable;
@@ -93,12 +94,29 @@ void drawPolygon(ObjectColor color, Face &face){
         glVertex3f(vertex.x, vertex.y, vertex.z);
     }
     glEnd();
-    
 }
 
 void drawObjects(GLenum mode){
     int shape_number = 0;
     glMatrixMode(GL_MODELVIEW);
+    GLfloat res[4] = {0, 0, 0, 0};
+    if (picking_mode && rotate_obj) {
+        glLoadIdentity();
+        glMultMatrixf(camera.getRotationMatrix());
+        glMultMatrixf(camera.getTranslationMatrix());
+        glMultMatrixf(shiftMinus100);
+        glMultMatrixf(shapes.at(last_picked_object).getRotationMatrix());
+        glMultMatrixf(shapes.at(last_picked_object).getTranslationMatrix());
+        Vector3f temp = shapes.at(last_picked_object).getSumOfVertices() / shapes.at(last_picked_object).getNumOfVertices();
+        GLfloat lastPickedObject[4] = {temp.x, temp.y, temp.z, 1};
+        GLfloat tempM[16];
+        glGetFloatv(GL_MODELVIEW_MATRIX, tempM);
+        for (int i =0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                res[i] += res[i] + tempM[i * 4 + j] * lastPickedObject[j];
+            }
+        }
+    }
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
         Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
         glLoadIdentity();
@@ -115,7 +133,7 @@ void drawObjects(GLenum mode){
                     if (shape->isPicked()) {
                         if (scale_obj) {
                             shape->scale(picking_scale_mode);
-                        } else if (rotate_obj) {
+                        } else if (rotate_obj && (shape_number != last_picked_object)) {
                             shape->rotate(rotation_direction, degree, rotation_mode);
                         } else if (translate_obj) {
                             shape->translate(picking_translation_mode);
@@ -128,6 +146,12 @@ void drawObjects(GLenum mode){
                 else if (s_mode) {
                     shape->autorotate(rotation_direction, degree);
                 }
+        }
+        if (picking_mode && rotate_obj && (shape_number != last_picked_object) && shape->isPicked()) {
+            glTranslatef(res[0], res[1], res[2]);
+        }
+        else if (picking_mode && rotate_obj && (shape_number == last_picked_object) && shape->isPicked()) {
+            shape->autorotate(rotation_direction, degree);
         }
         glMultMatrixf(shape->getRotationMatrix());
         glMultMatrixf(shape->getTranslationMatrix());
@@ -144,9 +168,9 @@ void drawObjects(GLenum mode){
             drawPolygon(shape->getColor(), *face);
         }
         if (picking_mode && translate_obj) {
-            glAccum(GL_MULT, 0.9);
             glAccum(GL_ACCUM, 0.1);
-            glAccum(GL_RETURN, 1.0);
+            glAccum(GL_RETURN, 1);
+            glAccum(GL_LOAD, 0.9);
         }
         // in picking mode, for each picked object, draw a tiny red sphere in its center of mass
         if (mode == GL_RENDER && picking_mode && shape->isPicked()) {
@@ -223,6 +247,7 @@ void init(){
     currently_picking = false;
     old_x = WINDOW_WIDTH / 2;
     old_y = WINDOW_HEIGHT / 2;
+    last_picked_object = -1;
     initLight();
 }
 
@@ -253,6 +278,7 @@ void processPicks(GLint hits, GLuint *names) {
     }
     if (min < INT32_MAX) {
         shapes.at(name_of_min).pick();
+        last_picked_object = name_of_min;
     }
 }
 
@@ -274,7 +300,6 @@ void pick_objects(int x, int y){
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     hits = glRenderMode(GL_RENDER);
-    list_hits(hits, buff);
     processPicks(hits, buff);
     display();
 }
@@ -284,6 +309,7 @@ void unpickAllObjects() {
         shape->unPick();
     }
     translate_obj = scale_obj = rotate_obj = erase_obj = false;
+    last_picked_object = -1;
 }
 
 void lightenObjects(){
