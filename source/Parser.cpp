@@ -33,7 +33,7 @@ void Parser::parse(vector<ObjectColor> &colors,
                   specular,
                   specular + 1,
                   specular + 2) != EOF) {
-        ObjectColor color = *new ObjectColor(objectName, Vector3f(ambient), Vector3f(diffuse), Vector3f(specular));
+        ObjectColor color = *new ObjectColor(objectName, ambient, diffuse, specular);
         colors.push_back(color);
     }
     fclose(file);
@@ -113,83 +113,4 @@ void Parser::parse(vector<ObjectColor> &colors,
         }
     }
     input.close();
-    
-//    file = fopen(INPUT_FILE, "r");
-//    if (file == NULL){
-//        cout << "Error: opening input file" << endl;
-//        exit(1);
-//    }
-//    while (!feof(file)){
-//        char lineHeader;// read the first word of the line
-//        int res = fscanf(file, "%c", &lineHeader);
-//        if (res == EOF)
-//            break; // EOF = End Of File. Quit the loop.
-//        if ((lineHeader == 'g') || (lineHeader == 'o')){
-//            int res = fscanf(file, "%c", &lineHeader);
-//            if (res == EOF)
-//                break; // EOF = End Of File. Quit the loop.
-//            if (lineHeader == ' ') {
-//                Shape shape = Shape(colors[numOfShapes], numOfShapes);
-//                shapes.push_back(shape);
-//                numOfShapes++;
-//                //                cout << "shape created!" << endl;
-//            }
-//        }
-//        if ( lineHeader == 'v' ){
-//            int res = fscanf(file, "%c", &lineHeader);
-//            if (res == EOF)
-//                break; // EOF = End Of File. Quit the loop.
-//            if (lineHeader == ' ') {
-//                float vertex_x, vertex_y, vertex_z;
-//                fscanf(file, "%f %f %f\n", &vertex_x, &vertex_y, &vertex_z );
-//                if (numOfShapes < 1) {
-//                    printf("You'r format is not accurate\n");
-//                    break;
-//                }
-//                Vector3f vertex = *new Vector3f(vertex_x, vertex_y, vertex_z);
-//                vertexTable.emplace(numOfVertices, vertex);
-//                shapes[numOfShapes - 1].setVertice(vertexTable[numOfVertices]);
-//                numOfVertices++;
-//                //                cout << "vertex created!" << endl;
-//            }
-//            else if ( lineHeader == 'n' ){
-//                //            Vector3f normal;
-//                float normal_x, normal_y, normal_z;
-//                fscanf(file, "%f %f %f\n", &normal_x, &normal_y, &normal_z );
-//                if (numOfShapes < 1) {
-//                    printf("You'r format is not accurate\n");
-//                    break;
-//                }
-//                Vector3f normal = *new Vector3f(normal_x, normal_y, normal_z);
-//                normalTable.emplace(numOfNormals, normal);
-//                shapes[numOfShapes - 1].setNormal(normalTable[numOfNormals]);
-//                numOfNormals++;
-//                //                cout << "normal created!" << endl;
-//            }
-//        }
-//        else if ( lineHeader == 'f' ){
-//            int res = fscanf(file, "%c", &lineHeader);
-//            if (res == EOF)
-//                break; // EOF = End Of File. Quit the loop.
-//            if (lineHeader == ' ') {
-//                vector<pair<Vector3f, Vector3f> > data;
-//                while (lineHeader != '\n') {
-//                    unsigned int vertexIndex, normalIndex;
-//                    fscanf(file, "%d//%d", &vertexIndex, &normalIndex);
-//                    data.push_back(make_pair(vertexTable[vertexIndex], normalTable[normalIndex]));
-//                    int res = fscanf(file, "%c", &lineHeader);
-//                    if (res == EOF)
-//                        break; // EOF = End Of File. Quit the loop.
-//                }
-//                if (numOfShapes < 1) {
-//                    printf("You'r format is not accurate\n");
-//                    break;
-//                }
-//                Face face(data);
-//                shapes[numOfShapes - 1].setFace(face);
-//                //                cout << "face created!" << endl;
-//            }
-//        }
-//    }
-//    fclose(file);
 }

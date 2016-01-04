@@ -94,3 +94,7 @@ void Shape::darken(){
 void Shape::erase(){
     color.erase();
 }
+
+void Shape::unerase(){
+    color.unerase();
+}

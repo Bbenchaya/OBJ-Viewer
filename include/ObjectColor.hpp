@@ -18,26 +18,30 @@ class ObjectColor {
     
 private:
     int name;
-    Vector3f ambient;
-    Vector3f diffuse;
-    Vector3f specular;
-    float alpha;
+    /*
+     * the color channels are defined like so:
+     * ambient[0] = R; ambient[1] = G, ambient[2] = B; ambient[3] = alpha
+     * and the same goes for diffuse and specular
+     */
+    float ambient[4];
+    float diffuse[4];
+    float specular[4];
     
 public:
     ObjectColor(int name,
-                Vector3f ambient,
-                Vector3f diffuse,
-                Vector3f specular);
+                float *ambient,
+                float *diffuse,
+                float *specular);
     ObjectColor(const ObjectColor &other);
     ObjectColor& operator=(const ObjectColor &other);
     void printColor();
-    Vector3f getAmbient();
-    Vector3f getDiffused();
-    Vector3f getSpecular();
-    float getAlpha();
+    float* getAmbient();
+    float* getDiffused();
+    float* getSpecular();
     void lighten();
     void darken();
     void erase();
+    void unerase();
 };
 
 #endif /* ObjectColor_hpp */

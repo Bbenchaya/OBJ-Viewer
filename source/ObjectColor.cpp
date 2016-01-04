@@ -9,21 +9,27 @@
 #include "ObjectColor.hpp"
 
 ObjectColor::ObjectColor(int name,
-                         Vector3f ambient,
-                         Vector3f diffuse,
-                         Vector3f specular) {
+                         float *ambient,
+                         float *diffuse,
+                         float *specular) {
     this->name = name;
-    this->ambient = ambient;
-    this->diffuse = diffuse;
-    this->specular = specular;
-    this->alpha = 1.0;
+    for (int i = 0; i < 3; i++) {
+        this->ambient[i] = ambient[i];
+        this->diffuse[i] = diffuse[i];
+        this->specular[i] = specular[i];
+    }
+    this->ambient[3] = 1;
+    this->diffuse[3] = 1;
+    this->specular[3] = 1;
 }
 
-ObjectColor::ObjectColor(const ObjectColor &other) : alpha(other.alpha){
+ObjectColor::ObjectColor(const ObjectColor &other) {
     this->name = other.name;
-    this->ambient = other.ambient;
-    this->diffuse = other.diffuse;
-    this->specular = other.specular;
+    for (int i = 0; i < 4; i++) {
+        this->ambient[i] = other.ambient[i];
+        this->diffuse[i] = other.diffuse[i];
+        this->specular[i] = other.specular[i];
+    }
 }
 
 ObjectColor& ObjectColor::operator=(const ObjectColor &other){
@@ -31,10 +37,11 @@ ObjectColor& ObjectColor::operator=(const ObjectColor &other){
         return *this;
     }
     this->name = other.name;
-    this->ambient = other.ambient;
-    this->diffuse = other.diffuse;
-    this->specular = other.specular;
-    this->alpha = other.alpha;
+    for (int i = 0; i < 4; i++) {
+        this->ambient[i] = other.ambient[i];
+        this->diffuse[i] = other.diffuse[i];
+        this->specular[i] = other.specular[i];
+    }
     return *this;
 }
 
@@ -42,34 +49,42 @@ void ObjectColor::printColor(){
     printf("%d, %f, %f, %f, %f, %f, %f ,%f ,%f ,%f\n", name, ambient[0], ambient[1], ambient[2], diffuse[0], diffuse[1], diffuse[2], specular[0], specular[1], specular[2]);
 }
 
-Vector3f ObjectColor::getAmbient(){
-    return this->ambient;
+float* ObjectColor::getAmbient(){
+    return ambient;
 }
 
-Vector3f ObjectColor::getDiffused(){
-    return this->diffuse;
+float* ObjectColor::getDiffused(){
+    return diffuse;
 }
 
-Vector3f ObjectColor::getSpecular(){
-    return this->specular;
-}
-
-float ObjectColor::getAlpha(){
-    return alpha;
+float* ObjectColor::getSpecular(){
+    return specular;
 }
 
 void ObjectColor::lighten(){
-    this->ambient *= 1.15;
-    this->diffuse *= 1.15;
-    this->specular *= 1.15;
+    for (int i = 0; i < 3; i++) {
+        ambient[i] = fmin(1, ambient[i] * 1.15);
+        diffuse[i] = fmin(1, diffuse[i] * 1.15);
+        specular[i] = fmin(1, specular[i] * 1.15);
+    }
 }
 
 void ObjectColor::darken(){
-    this->ambient /= 1.15;
-    this->diffuse /= 1.15;
-    this->specular /= 1.15;
+    for (int i = 0; i < 3; i++) {
+        ambient[i] = fmin(1, ambient[i] / 1.15);
+        diffuse[i] = fmin(1, diffuse[i] / 1.15);
+        specular[i] = fmin(1, specular[i] / 1.15);
+    }
 }
 
 void ObjectColor::erase(){
-    alpha = 0.0;
+    ambient[3] = 0;
+    diffuse[3] = 0;
+    specular[3] = 0;
+}
+
+void ObjectColor::unerase(){
+    ambient[3] = 1;
+    diffuse[3] = 1;
+    specular[3] = 1;
 }

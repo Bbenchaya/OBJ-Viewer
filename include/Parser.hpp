@@ -22,13 +22,13 @@
 #include "Shape.hpp"
 #include "Vector3f.h"
 
-#define INPUT_FILE "/Users/bbenchaya/Documents/Xcode/CG_ex4/resource/simple.obj"
-#define COLOR_TABLE "/Users/bbenchaya/Documents/Xcode/CG_ex4/resource/colorTable.csv"
+//#define INPUT_FILE "/Users/bbenchaya/Documents/Xcode/CG_ex4/resource/simple.obj"
+//#define COLOR_TABLE "/Users/bbenchaya/Documents/Xcode/CG_ex4/resource/colorTable.csv"
 //#define INPUT_FILE "/Users/bbenchaya/Documents/Xcode/CG_ex4/resource/doll.obj"
-//#define INPUT_FILE "/Users/asafchelouche/programming/CG-ex4/resource/simple.obj"
+#define INPUT_FILE "/Users/asafchelouche/programming/CG-ex4/resource/simple.obj"
 //#define INPUT_FILE "/Users/asafchelouche/programming/CG-ex4/resource/skeleton.obj"
 //#define INPUT_FILE "/Users/asafchelouche/programming/CG-ex4/resource/doll.obj"
-//#define COLOR_TABLE "/Users/asafchelouche/programming/CG-ex4/resource/colorTable.csv"
+#define COLOR_TABLE "/Users/asafchelouche/programming/CG-ex4/resource/colorTable.csv"
 
 using namespace std;
 

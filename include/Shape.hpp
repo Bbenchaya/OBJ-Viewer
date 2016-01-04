@@ -40,6 +40,7 @@ public:
     void lighten();
     void darken();
     void erase();
+    void unerase();
 };
 
 

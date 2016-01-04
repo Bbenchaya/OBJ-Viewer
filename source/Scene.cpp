@@ -96,7 +96,6 @@ void drawPolygon(ObjectColor color, Face &face){
     glMaterialfv(GL_FRONT, GL_AMBIENT, color.getAmbient());
     glMaterialfv(GL_FRONT, GL_DIFFUSE, color.getDiffused());
     glMaterialfv(GL_FRONT, GL_SPECULAR, color.getSpecular());
-    glColor4f(1, 1, 1, color.getAlpha());
     glBegin(GL_POLYGON);
     for (int i = 0; i < face.numOfVertices(); i++) {
         Vector3f normal = face.getPair(i).second;
@@ -154,10 +153,11 @@ void drawObjects(GLenum mode){
         glMultMatrixf(temp);
         for (vector<Face>::iterator face = shape->getFaces().begin(); face != shape->getFaces().end(); face++) {
             drawPolygon(shape->getColor(), *face);
-            if (picking_mode && translate_obj) {
-                glAccum(GL_MULT, 0.98);
-                glAccum(GL_ACCUM, 0.02);
-            }
+
+        }
+        if (picking_mode && translate_obj) {
+            glAccum(GL_MULT, 0.98);
+            glAccum(GL_ACCUM, 0.02);
         }
         if (picking_mode && translate_obj) {
             glAccum(GL_RETURN, 1.0);
@@ -219,10 +219,12 @@ void init(){
     gluPerspective(FOV, 1, Z_NEAR, Z_FAR);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-//    glAlphaFunc(GL_LESS, 0.1);
-//    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, 0.1);
+    glEnable(GL_ALPHA_TEST);
 //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 //    glEnable(GL_BLEND);
+//    glEnable(GL_COLOR_MATERIAL);
+//    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     degree = 0;
@@ -309,6 +311,12 @@ void resetGlobalVariables() {
     picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
 }
 
+void uneraseAllShapes() {
+    for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++) {
+        shape->unerase();
+    }
+}
+
 void readKey(unsigned char key, int xmouse, int ymouse){
     switch (key){
         case 's':
@@ -321,6 +329,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             camera_mode = global_mode = picking_mode = currently_picking = false;
             resetGlobalVariables();
             glClear(GL_ACCUM_BUFFER_BIT);
+            uneraseAllShapes();
             display();
             break;
         case 'g':
@@ -335,6 +344,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             camera_mode = s_mode = picking_mode = currently_picking = false;
             resetGlobalVariables();
             glClear(GL_ACCUM_BUFFER_BIT);
+            uneraseAllShapes();
             display();
             break;
         case 'c':
@@ -349,6 +359,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             global_mode = s_mode = picking_mode = currently_picking = false;
             resetGlobalVariables();
             glClear(GL_ACCUM_BUFFER_BIT);
+            uneraseAllShapes();
             display();
             break;
         case 'r':
@@ -409,6 +420,7 @@ void readKey(unsigned char key, int xmouse, int ymouse){
             camera_mode = s_mode = picking_mode = currently_picking = false;
             picking_scale_mode = picking_translation_mode = rotation_mode = rotation_direction = NEUTRAL_VALUE;
             glClear(GL_ACCUM_BUFFER_BIT);
+            uneraseAllShapes();
             display();
             break;
         case ESC:
