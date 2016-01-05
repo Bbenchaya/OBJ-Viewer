@@ -99,24 +99,24 @@ void drawPolygon(ObjectColor color, Face &face){
 void drawObjects(GLenum mode){
     int shape_number = 0;
     glMatrixMode(GL_MODELVIEW);
-    GLfloat res[4] = {0, 0, 0, 0};
-    if (picking_mode && rotate_obj) {
-        glLoadIdentity();
-        glMultMatrixf(camera.getRotationMatrix());
-        glMultMatrixf(camera.getTranslationMatrix());
-        glMultMatrixf(shiftMinus100);
-        glMultMatrixf(shapes.at(last_picked_object).getRotationMatrix());
-        glMultMatrixf(shapes.at(last_picked_object).getTranslationMatrix());
-        Vector3f temp = shapes.at(last_picked_object).getSumOfVertices() / shapes.at(last_picked_object).getNumOfVertices();
-        GLfloat lastPickedObject[4] = {temp.x, temp.y, temp.z, 1};
-        GLfloat tempM[16];
-        glGetFloatv(GL_MODELVIEW_MATRIX, tempM);
-        for (int i =0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                res[i] += res[i] + tempM[i * 4 + j] * lastPickedObject[j];
-            }
-        }
-    }
+//    GLfloat res[4] = {0, 0, 0, 0};
+//    if (picking_mode && rotate_obj) {
+//        glLoadIdentity();
+//        glMultMatrixf(camera.getRotationMatrix());
+//        glMultMatrixf(camera.getTranslationMatrix());
+//        glMultMatrixf(shiftMinus100);
+//        glMultMatrixf(shapes.at(last_picked_object).getRotationMatrix());
+//        glMultMatrixf(shapes.at(last_picked_object).getTranslationMatrix());
+//        Vector3f temp = shapes.at(last_picked_object).getSumOfVertices() / shapes.at(last_picked_object).getNumOfVertices();
+//        GLfloat lastPickedObject[4] = {temp.x, temp.y, temp.z, 0};
+//        GLfloat tempM[16];
+//        glGetFloatv(GL_MODELVIEW_MATRIX, tempM);
+//        for (int i =0; i < 4; i++) {
+//            for (int j = 0; j < 4; j++) {
+//                res[i] += res[i] + tempM[i * 4 + j] * lastPickedObject[j];
+//            }
+//        }
+//    }
     for (vector<Shape>::iterator shape = shapes.begin(); shape != shapes.end(); shape++, shape_number++) {
         Vector3f com = shape->getSumOfVertices() / shape->getNumOfVertices();
         glLoadIdentity();
@@ -133,7 +133,7 @@ void drawObjects(GLenum mode){
                     if (shape->isPicked()) {
                         if (scale_obj) {
                             shape->scale(picking_scale_mode);
-                        } else if (rotate_obj && (shape_number != last_picked_object)) {
+                        } else if (rotate_obj) {
                             shape->rotate(rotation_direction, degree, rotation_mode);
                         } else if (translate_obj) {
                             shape->translate(picking_translation_mode);
@@ -147,12 +147,13 @@ void drawObjects(GLenum mode){
                     shape->autorotate(rotation_direction, degree);
                 }
         }
-        if (picking_mode && rotate_obj && (shape_number != last_picked_object) && shape->isPicked()) {
-            glTranslatef(res[0], res[1], res[2]);
-        }
-        else if (picking_mode && rotate_obj && (shape_number == last_picked_object) && shape->isPicked()) {
-            shape->autorotate(rotation_direction, degree);
-        }
+        //        if (picking_mode && rotate_obj && (shape_number != last_picked_object) && shape->isPicked()) {
+        //            glTranslatef(res[0], res[1], res[2]);
+        //        }
+        //        else
+//        if (picking_mode && rotate_obj && (shape_number == last_picked_object) && shape->isPicked()) {
+//            shape->autorotate(rotation_direction, degree);
+//        }
         glMultMatrixf(shape->getRotationMatrix());
         glMultMatrixf(shape->getTranslationMatrix());
         glPushMatrix();
