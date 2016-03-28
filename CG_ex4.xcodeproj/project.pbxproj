@@ -17,6 +17,7 @@
 		594FB6281C31223A003F1B1E /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 594FB6271C31223A003F1B1E /* GLUT.framework */; };
 		594FB62A1C31223F003F1B1E /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 594FB6291C31223F003F1B1E /* OpenGL.framework */; };
 		594FB62C1C312248003F1B1E /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 594FB62B1C312248003F1B1E /* Cocoa.framework */; };
+		F040F4B31CA950FD0092793F /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = F040F4B21CA950FD0092793F /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -58,6 +59,11 @@
 		594FB6271C31223A003F1B1E /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
 		594FB6291C31223F003F1B1E /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		594FB62B1C312248003F1B1E /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		F040F4B11CA950FD0092793F /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		F040F4B21CA950FD0092793F /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		F040F4B41CA9555E0092793F /* image1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = image1.png; sourceTree = "<group>"; };
+		F040F4B51CA9555E0092793F /* image2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = image2.png; sourceTree = "<group>"; };
+		F040F4B61CA9555E0092793F /* image3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = image3.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,6 +90,11 @@
 				594FB6181C3121FA003F1B1E /* source */,
 				594FB6101C3121D6003F1B1E /* resource */,
 				593962321C31211200D4CDEF /* Products */,
+				F040F4B11CA950FD0092793F /* LICENSE */,
+				F040F4B21CA950FD0092793F /* README.md */,
+				F040F4B41CA9555E0092793F /* image1.png */,
+				F040F4B51CA9555E0092793F /* image2.png */,
+				F040F4B61CA9555E0092793F /* image3.png */,
 			);
 			sourceTree = "<group>";
 		};
@@ -200,6 +211,7 @@
 				594FB6261C31220A003F1B1E /* Shape.cpp in Sources */,
 				594FB6211C31220A003F1B1E /* Camera.cpp in Sources */,
 				594FB6241C31220A003F1B1E /* Parser.cpp in Sources */,
+				F040F4B31CA950FD0092793F /* README.md in Sources */,
 				594FB6231C31220A003F1B1E /* ObjectColor.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
