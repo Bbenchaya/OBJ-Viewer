@@ -5,6 +5,7 @@
 
 ## Usage
 * Define the file you wish to open in `Parser.hpp`. This repo has 3 files to select from in `/resource`.
+* Left-click and hold, then move the mouse around to affect the object.
 * Right-click a shape's face to enter `picking mode`. Right clicking more faces would pick them too. The last face must be _left-clicked_ to exit picking mode. This would cause only the selected faces to react to the following commands:
   * Press `t`, then left-click and hold while moving the mouse to translate the object.
   * Press `r`, then left-click and hold while moving the mouse to rotate the object.
@@ -21,11 +22,11 @@
 
 
 
-![image 2](https://github.com/Bbenchaya/OBJ-Viewer/blob/master/image1.png)
+![image 2](https://github.com/Bbenchaya/OBJ-Viewer/blob/master/image2.png)
 
 
 
-![image 3](https://github.com/Bbenchaya/OBJ-Viewer/blob/master/image1.png)
+![image 3](https://github.com/Bbenchaya/OBJ-Viewer/blob/master/image3.png)
 
 
 
